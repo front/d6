@@ -1,5 +1,5 @@
 <?php
-// $Id: ds.display.inc,v 1.1.2.16 2009/12/29 18:34:40 swentel Exp $
+// $Id: ds.display.inc,v 1.1.2.24 2010/01/25 20:32:42 swentel Exp $
 
 /**
  * @file
@@ -7,16 +7,74 @@
  */
 
 /**
- * General page.
+ * General overview page.
  */
-function ds_layout_general() {
+function ds_layout_overview() {
+  $content = '';
 
-  $path = db_result(db_query("SELECT path FROM {menu_router} WHERE path LIKE 'admin/ds/layout/%%' AND number_parts = 4 ORDER BY weight DESC"));
-  if ($path != FALSE) {
-    drupal_goto($path);
+  drupal_add_css(drupal_get_path('module', 'ds') .'/css/ds.css');
+
+  $rows = array();
+  foreach (module_implements('ds_api') as $module) {
+    if (user_access('configure layout for '. $module)) {
+      $api_info = ds_api_info($module);
+
+      // Build modes.
+      $build_modes = ds_get_build_modes($module);
+
+      foreach ($api_info['types']() as $tkey => $otype) {
+
+        $type_name = $otype->type;
+        $type = $type_name;
+        $type_url_str = str_replace('_', '-', $type_name);
+
+        if (!empty($build_modes)) {
+          $rows[] = array(array('data' => $otype->name, 'colspan' => '3', 'class' => 'ds-row-title'));
+          foreach ($build_modes as $bkey => $build_mode) {
+
+            // Settings en status.
+            $display_settings = variable_get($module .'_display_settings_'. $type, array());
+            $settings_status = isset($display_settings[$bkey]['status']) ? $display_settings[$bkey]['status'] : DS_SETTINGS_UI;
+
+            $row = array();
+            $row[] = $build_mode['title'];
+            $row[] = ds_settings_status($settings_status);
+
+            $operations = l('Edit', 'admin/ds/layout/'. $type .'/'. $bkey);
+            if (user_access('revert overridden settings') && $settings_status == DS_SETTINGS_OVERRIDDEN) {
+              $operations .= ' - '.l('Revert', 'admin/ds/tools/revert/'.$module .'/'. $type .'/'. $bkey);
+            }
+            $row[] = $operations;
+            $rows[] = array('data' => $row, 'class' => 'ds-row-type');
+          }
+        }
+      }
+      if (!empty($rows)) {
+        $content = theme('table', array(), $rows, array('id' => 'ds-overview-page'));
+      }
+    }
   }
 
-  return t('You have no object types.');
+  if (empty($content)) {
+    $content = t('No items found.');
+  }
+
+  return $content;
+}
+
+/**
+ * Helper function to return readable name of status.
+ *
+ * @param boolean $status The status.
+ */
+function ds_settings_status($status) {
+  $settings_status_descriptions = array(
+    DS_SETTINGS_UI => t('Normal'),
+    DS_SETTINGS_DEFAULT => t('Default'),
+    DS_SETTINGS_OVERRIDDEN => t('Overridden'),
+  );
+
+  return $settings_status_descriptions[$status];
 }
 
 /**
@@ -54,17 +112,6 @@ function ds_display_overview_form(&$form_state, $type, $build_mode = 'full', $mo
       $form['#extra'][$key] = $type_info->{$key};
     }
   }
-
-  // Settings status.
-  $settings_status_descriptions = array(
-    DS_SETTINGS_UI => t('Status: using settings via the UI.'),
-    DS_SETTINGS_DEFAULT => t('Status: using default settings.'),
-    DS_SETTINGS_OVERRIDDEN => t('Status: using overridden settings. <a href="@url">Click to revert to default settings</a>.', array('@url' => url('admin/ds/tools/revert/'.$module .'/'. $type .'/'. $build_mode)))
-  );
-  $form['settings_status'] = array(
-    '#type' => 'item',
-    '#value' => $settings_status_descriptions[$settings_status],
-  );
 
   // Exclude build mode.
   $exclude_build_modes = variable_get($module .'_buildmodes_exclude', array());
@@ -112,29 +159,58 @@ function ds_display_overview_form(&$form_state, $type, $build_mode = 'full', $mo
  */
 function ds_fields_display_form(&$form, $display_settings) {
 
+  global $base_url;
+
   $module = $form['#module'];
   $build_mode = $form['#build_mode'];
   $type = $form['#type_name'];
   $extra = $form['#extra'];
 
   $fields = ds_get_fields($module, $type, $build_mode, $extra, TRUE);
-  if (!empty($fields)) {
-    foreach ($fields as $field => $value) {
-      $form['#fields'][] = $field;
-      $form[$field] = (!empty($form[$form['#fields'][0]])) ? $form[$form['#fields'][0]] : ds_field_default_form_properties($build_mode);
-      $form[$field]['human_name']['#value'] = $value['title'];
-      $form[$field]['weight']['#default_value'] = ds_default_value($display_settings, $build_mode, 'fields', $field, 'weight', DS_DEFAULT_WEIGHT);
-      $form[$field]['ds_weight']['#default_value'] = ds_default_value($display_settings, $build_mode, 'fields', $field, 'weight', DS_DEFAULT_WEIGHT);
-      $form[$field][$build_mode]['label']['format']['#default_value'] = isset($value['display_settings'][$build_mode]['label']['format']) ? $value['display_settings'][$build_mode]['label']['format'] : ds_default_value($display_settings, $build_mode, 'fields', $field, 'labelformat', DS_DEFAULT_LABEL_FORMAT);
-      $form[$field][$build_mode]['format']['#options'] = isset($value['formatters']) ? $value['formatters'] : array();
-      $format = ds_default_value($display_settings, $build_mode, 'fields', $field, 'format', '');
-      if (empty($format) && isset($value['formatters'])) {
-        $format = key($value['formatters']);
-      }
-      $form[$field][$build_mode]['format']['#default_value'] = $format;
-      $form[$field][$build_mode]['format']['#access'] = (count($form[$field][$build_mode]['format']['#options']) == 1 || count($form[$field][$build_mode]['format']['#options']) == 0) ? FALSE : TRUE;
-      $form[$field][$build_mode]['region']['#default_value'] = ds_default_value($display_settings, $build_mode, 'fields', $field, 'region', DS_DEFAULT_REGION);
+
+  // Break form build in case no fields
+  if (empty($fields)) {
+    return;
+  }
+
+  $default_properties = ds_field_default_form_properties($build_mode);
+  $default = (!empty($form[key($fields)])) ? $form[key($fields)] : $default_properties;
+
+  foreach ($fields as $field => $value) {
+
+    // Add form variable to let the template system know about the fields
+    $form['#fields'][] = $field;
+
+    // Every field starts with the default value
+    $form[$field] = $default;
+
+    // Populate/override the fields with the saved values
+    $form[$field][$build_mode]['label']['format']['#default_value'] = isset($value['display_settings'][$build_mode]['label']['format']) ? $value['display_settings'][$build_mode]['label']['format'] : ds_default_value($display_settings, $build_mode, 'fields', $field, 'labelformat', DS_DEFAULT_LABEL_FORMAT);
+
+    $label_value = t(check_plain(ds_default_value($display_settings, $build_mode, 'fields', $field, 'label_value', $value['title'])));
+    $form[$field][$build_mode]['label_value'] = array(
+      '#type' => 'hidden',
+      '#default_value' => $label_value,
+    );
+    $form[$field][$build_mode]['label_edit']['#value'] = l(t('Edit'), $base_url . request_uri(), array(
+      'attributes' => array('onclick' => 'javascript: Drupal.DisplaySuite.changeLabel(this, "' . $label_value. '"); return false;')
+    ));
+
+    $form[$field]['human_name']['#value'] = $label_value;
+
+    $form[$field]['weight']['#default_value'] = ds_default_value($display_settings, $build_mode, 'fields', $field, 'weight', DS_DEFAULT_WEIGHT);
+
+    $form[$field]['ds_weight']['#default_value'] = ds_default_value($display_settings, $build_mode, 'fields', $field, 'weight', DS_DEFAULT_WEIGHT);
+
+    $form[$field][$build_mode]['format']['#options'] = isset($value['formatters']) ? $value['formatters'] : array();
+    $format = ds_default_value($display_settings, $build_mode, 'fields', $field, 'format', '');
+    if (empty($format) && isset($value['formatters'])) {
+      $format = key($value['formatters']);
     }
+    $form[$field][$build_mode]['format']['#default_value'] = $format;
+    $form[$field][$build_mode]['format']['#access'] = (count($form[$field][$build_mode]['format']['#options']) == 0) ? FALSE : TRUE;
+
+    $form[$field][$build_mode]['region']['#default_value'] = ds_default_value($display_settings, $build_mode, 'fields', $field, 'region', DS_DEFAULT_REGION);
   }
 }
 
@@ -188,6 +264,7 @@ function ds_display_overview_form_submit($form, &$form_state) {
       $display_settings[$build_mode]['fields'][$key]['weight'] = $form_state['values'][$key]['ds_weight'];
       $display_settings[$build_mode]['fields'][$key]['format'] = $form_state['values'][$key][$build_mode]['format'];
       $display_settings[$build_mode]['fields'][$key]['region'] = $form_state['values'][$key][$build_mode]['region'];
+      $display_settings[$build_mode]['fields'][$key]['label_value'] = $form_state['values'][$key][$build_mode]['label_value'];
       $display_settings[$build_mode]['fields'][$key]['labelformat'] = $form_state['values'][$key][$build_mode]['label']['format'];
 
       // Ditch this field, unless it has its storage in another module (ie CCK)

@@ -1,5 +1,5 @@
 <?php
-// $Id: emptyregionrender.inc,v 1.1.2.4 2009/12/29 17:51:21 swentel Exp $
+// $Id: emptyregionrender.inc,v 1.1.2.5 2010/01/26 10:08:28 swentel Exp $
 
 /**
  * @file
@@ -40,6 +40,7 @@ function ds_emptyregionrender_submit($form, $form_state, &$display_settings) {
   $regions_save = array();
   $build_mode = $form['#build_mode'];
   foreach ($regions as $region => $title) {
+    if (isset($form_state['values']['emptyregionrender']['region-render-'. $region]))
     $regions_save['render'][$region] = $form_state['values']['emptyregionrender']['region-render-'. $region];
   }
   $display_settings[$build_mode]['emptyregionrender'] = $regions_save;

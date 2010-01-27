@@ -1,4 +1,4 @@
-$Id
+$Id: README.txt,v 1.5 2010/01/25 06:09:10 blixxxa Exp $
 
 // ------------------------------------------------------------
 // SUMMARY
@@ -26,6 +26,12 @@ Once enabled according to INSTALL.txt.
 
 To customize the view displayed by the node picker, navigate to admin/build/views and edit the views nodepicker_nodes
 and nodepicker_taxonomy.
+
+// ------------------------------------------------------------
+// INTEGRATION WITH PATHFILTER
+
+To integrate Node picker with the PathFilter module follow the steps outlined in this post:
+http://drupal.org/node/687650#comment-2510656
 
 // ------------------------------------------------------------
 // TROUBLESHOOTING

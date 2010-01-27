@@ -1,4 +1,4 @@
-$Id
+$Id: INSTALL.txt,v 1.5 2010/01/15 08:32:59 blixxxa Exp $
 
 DRUPAL NODE PICKER PLUGIN FOR TINYMCE - Jonathan Yankovich
 

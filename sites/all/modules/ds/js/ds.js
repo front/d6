@@ -1,4 +1,4 @@
-// $Id: ds.js,v 1.1 2009/10/18 15:25:22 swentel Exp $
+// $Id: ds.js,v 1.1.2.2 2010/01/25 19:35:38 stalski Exp $
 
 /**
  * Move a field in the fields table from one region to another via select list.
@@ -132,3 +132,26 @@ function toggleFieldPluginsLink(div_show, div_hide) {
   $('#' + div_show).show();  
   $('#' + div_hide).hide();
 }
+
+/**
+ * Drupal ds object.
+ */
+ Drupal.DisplaySuite = Drupal.DisplaySuite || {};
+ 
+/**
+ * Change the label of a field instance in a build mode.
+ */
+ Drupal.DisplaySuite.changeLabel = function(element, title) {
+ 
+   var changed = prompt(Drupal.t("Edit label"), title);
+   
+   if (changed == '') {
+     alert(Drupal.t('Field can not be empty'));
+     return false;
+   }
+   
+   var labelcell = $(element).parents(".ds-label");
+   labelcell.find(".label-field").text(changed);
+   labelcell.find("input").val(changed);
+   
+ }

@@ -1,5 +1,5 @@
 <?php
-// $Id: ds.features.inc,v 1.1.2.7 2009/12/29 17:51:21 swentel Exp $
+// $Id: ds.features.inc,v 1.1.2.9 2010/01/19 22:20:15 swentel Exp $
 
 /**
  * @file
@@ -47,9 +47,6 @@ function _ds_features_get_types() {
  */
 function ds_features_export($data, &$export, $module_name = '') {
   $pipe = array();
-
-  // Display suite is always dependant.
-  $export['dependencies']['ds'] = 'ds';
 
   foreach ($data as $type) {
     list($module, $dstype) = explode('-', $type);

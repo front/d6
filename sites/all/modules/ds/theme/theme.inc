@@ -1,5 +1,5 @@
 <?php
-// $Id: theme.inc,v 1.1.2.11 2009/12/28 21:47:19 swentel Exp $
+// $Id: theme.inc,v 1.1.2.13 2010/01/25 19:35:38 stalski Exp $
 
 /**
  * @file
@@ -112,6 +112,8 @@ function template_preprocess_ds_display_overview_form(&$vars) {
       // Render the display fields
       if ($child == $build_mode) {
         $row->{$child}->label = drupal_render($element[$child]['label']);
+        $row->{$child}->label_edit = drupal_render($element[$child]['label_edit']);
+        $row->{$child}->label_value = drupal_render($element[$child]['label_value']);
         $row->{$child}->format = drupal_render($element[$child]['format']);
         $row->{$child}->region = drupal_render($element[$child]['region']);
       }
@@ -148,6 +150,7 @@ function template_preprocess_ds_display_overview_form(&$vars) {
   }
 
   // Plugins available.
+  $vars['plugins'] = FALSE;
   if ($form['#plugins'] == TRUE) {
     $vars['plugins'] = TRUE;
     $vars['plugins_content'] = '';

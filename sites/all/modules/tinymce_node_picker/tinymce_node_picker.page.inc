@@ -1,9 +1,30 @@
 <?php
-// $id$
+// $Id: tinymce_node_picker.page.inc,v 1.8 2010/01/14 13:09:47 blixxxa Exp $
+
 /**
  * @file
  * Page functions for module TinyMCE Node Picker.
  */
+
+/**
+ * Module settings page.
+ */
+function tinymce_node_picker_settings() {
+	$form = array();
+	 
+	$form['tinymce_node_picker_tabs'] = array(
+	  '#type' => 'checkboxes',
+	  '#title' => t('Enabled tabs'),
+	  '#default_value' => variable_get('tinymce_node_picker_tabs', array('menu', 'taxonomy')),
+	  '#options' => array(
+	    'menu' => t('Menu'),
+	    'taxonomy' => t('Taxonomy'),
+	  ),
+	  '#description' => t('Select which tabs should be visible in the Node picker dialog.'),
+	);
+
+  return system_settings_form($form);
+}
 
 /**
  * Display Node picker page, nodes task.

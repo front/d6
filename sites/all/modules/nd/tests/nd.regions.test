@@ -1,5 +1,5 @@
 <?php
-// $Id: nd.regions.test,v 1.1.2.7 2009/10/20 18:41:48 swentel Exp $
+// $Id: nd.regions.test,v 1.1.2.7.2.3 2010/01/27 10:35:23 swentel Exp $
 
 /**
  * @file
@@ -29,7 +29,7 @@ class NodeDisplaysRegions extends DrupalWebTestCase {
    * Debug helper function. Writes values away to a text file in the files directory.
    */
   function _debugHelper($value, $writetype = 'a+') {
-    $debug = fopen($this->originalFileDirectory .'/simpletestdebug.txt', 'a+');
+    $debug = fopen($this->originalFileDirectory .'/simpletestdebug.txt', $writetype);
     fwrite($debug, print_r($value, TRUE) ."\n");
     fclose($debug);
   }
@@ -67,9 +67,9 @@ class NodeDisplaysRegions extends DrupalWebTestCase {
    * Test that region handling works when no cck fields are defined.
    */
   function testRegionsWithNoCCKFields() {
-    $admin_user = $this->drupalCreateUser(array('administer content types', 'administer nodes'));
+    $admin_user = $this->drupalCreateUser(array('administer nodes', 'access display suite', 'administer nd', 'configure layout for nd', 'export and import settings', 'revert overridden settings', 'use PHP in custom fields'));
     $this->drupalLogin($admin_user);
-    $this->drupalGet('admin/ds/layout/page/display');
+    $this->drupalGet('admin/ds/layout/page/full');
     $this->assertRaw('edit-body-full-region-wrapper', t('Region handling works with no CCK fields.'), t('Region handling'));
   }
 
@@ -78,7 +78,7 @@ class NodeDisplaysRegions extends DrupalWebTestCase {
    * excluding fields and putting them in the right region.
    */
   function testRendering() {
-    $admin_user = $this->drupalCreateUser(array('administer content types', 'administer nodes'));
+    $admin_user = $this->drupalCreateUser(array('administer nodes', 'access display suite', 'administer nd', 'configure layout for nd', 'export and import settings', 'revert overridden settings', 'use PHP in custom fields'));
     $this->drupalLogin($admin_user);
 
     $page_node = $this->drupalCreateNode();
@@ -91,7 +91,7 @@ class NodeDisplaysRegions extends DrupalWebTestCase {
       'links[full][region]' => 'footer',
       'terms[full][region]' => 'disabled',
     );
-    $this->drupalPost('admin/ds/layout/page/display', $edit, t('Save'));
+    $this->drupalPost('admin/ds/layout/page/full', $edit, t('Save'));
     $page_object = $this->_nd_build_object($page_node);
     $this->assertTrue(in_array('title', array_keys($page_object->regions['header'])), t('Title is in header region'), t('Rendering tests'));
     $this->assertTrue(in_array('author', array_keys($page_object->regions['middle'])), t('Author is in middle region'), t('Rendering tests'));
@@ -107,7 +107,7 @@ class NodeDisplaysRegions extends DrupalWebTestCase {
       'links[full][region]' => 'footer',
       'terms[full][region]' => 'footer',
     );
-    $this->drupalPost('admin/ds/layout/page/display', $edit, t('Save'));
+    $this->drupalPost('admin/ds/layout/page/full', $edit, t('Save'));
     $page_object = $this->_nd_build_object($page_node);
     $this->assertTrue(in_array('terms', array_keys($page_object->regions['footer'])), t('Terms is in footer region'), t('Rendering tests'));
     $this->assertTrue(in_array('author', array_keys($page_object->regions['right'])), t('Author is in right region'), t('Rendering tests'));

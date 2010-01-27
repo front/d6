@@ -1,15 +1,10 @@
-// $Id: nodepicker.js,v 1.4 2009/12/03 07:18:33 blixxxa Exp $
+// $Id: nodepicker.js,v 1.6 2010/01/20 07:48:31 blixxxa Exp $
 
-Drupal.wysiwyg.plugins["nodepicker"] = {
+Drupal.wysiwyg.plugins["nodepicker"] = {    
   /**
    * Execute the button.
    */
-  invoke: function(data, settings, instanceId) {
-  	// Make sure a selection exists.
-  	if(typeof data.content == "undefined" || data.content.length == 0) {
-  		return false;
-  	}
-  	
+  invoke: function(data, settings, instanceId) {  	
   	// Options to pass to the dialog.
 		var options = { id: instanceId, content: data.content };
  

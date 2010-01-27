@@ -1,5 +1,5 @@
 <?php
-// $Id: ds.module,v 1.1.2.22 2009/12/29 18:34:40 swentel Exp $
+// $Id: ds.module,v 1.1.2.33 2010/01/27 10:35:37 swentel Exp $
 
 /**
  * Core functions for the Display Suite module.
@@ -19,8 +19,8 @@ define('DS_FIELD_THEME', 1);
 define('DS_FIELD_FUNCTION', 2);
 define('DS_FIELD_PREPROCESS', 3);
 define('DS_FIELD_IGNORE', 4);
-define('DS_FIELD_CUSTOM', 5);
-define('DS_FIELD_OVERRIDABLE', 6);
+define('DS_FIELD_UI', 5);
+define('DS_FIELD_DEFAULT', 6);
 define('DS_FIELD_OVERRIDDEN', 7);
 define('DS_FIELD_BLOCK', 8);
 
@@ -44,6 +44,14 @@ define('BLOCK_CONTENT', 3);
  */
 function ds_init() {
   drupal_add_css(drupal_get_path('module', 'ds') .'/css/regions.css');
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function ds_perm() {
+  require_once('includes/ds.registry.inc');
+  return _ds_perm();
 }
 
 /**
@@ -103,9 +111,12 @@ function ds_api_info($module, $type_name = 'all') {
     $function = $module .'_ds_api';
     $api_data = $function();
     $api_info[$module][$type_name] = $api_data;
+    if (!isset($api_info[$module][$type_name]['extra'])) {
+      $api_info[$module][$type_name]['extra'] = array();
+    }
 
     // Extra info needed or not.
-    if ($type_name != 'all' && isset($api_data['extra'])) {
+    if ($type_name != 'all' && !empty($api_data['extra'])) {
       $extra = array();
       $types = $api_data['types']();
       $type_info = $types[$type_name];
@@ -149,6 +160,9 @@ function ds_build_fields_and_regions(&$object, $module) {
   $fields = ds_get_fields($module, $object->type, $object->build_mode, $api_info['extra']);
   $field_settings = ds_default_value($display_settings, $object->build_mode, 'fields');
 
+  // Get the object type for field rendering and tokenization.
+  $object_type = $api_info['object'];
+
   if (!empty($fields)) {
     foreach ($fields as $key => $field) {
 
@@ -179,13 +193,13 @@ function ds_build_fields_and_regions(&$object, $module) {
           case DS_FIELD_IGNORE:
             $ds_preprocess_fields[$key] = $field['type'];
             break;
-          case DS_FIELD_CUSTOM:
-          case DS_FIELD_OVERRIDABLE:
+          case DS_FIELD_UI:
+          case DS_FIELD_DEFAULT:
           case DS_FIELD_OVERRIDDEN:
-            ds_eval_code($key, $field, $object, 'node');
+            ds_eval_code($key, $field, $object, $object_type);
             break;
           case DS_FIELD_BLOCK:
-            ds_eval_block($key, $field, $object, 'node');
+            ds_eval_block($key, $field, $object);
             break;
           case DS_FIELD_FUNCTION:
             if (isset($field['file'])) {
@@ -264,6 +278,10 @@ function ds_render_content($object, $module, $vars, $theme_function = 'ds_field'
         $field_content = isset($vars[$key .'_rendered']) ? $vars[$key .'_rendered'] : '';
         if (!empty($field_content)) {
           $field_key = strtr($key, '_', '-');
+          // Try to change the label if this is configured.
+          if (isset($display_settings[$object->build_mode]['fields'][$key]['label_value'])) {
+            $object->ds_fields[$key]['title'] = t(check_plain($display_settings[$object->build_mode]['fields'][$key]['label_value']));
+          }
           $region_content .= theme($theme_function, $field_content, $field_key, $object->ds_fields[$key]);
         }
       }
@@ -342,10 +360,11 @@ function ds_default_value($settings, $build_mode, $type, $key = NULL, $search_ke
  * @param string $type_name The name of object (ie, page or story for node types, profile for users)
  * @param string $build_mode The build mode.
  * @param array $extra Extra properties we might want to check on (ie has_body property).
- * @param array $reset Whether we need to reset the fields cache or not.
+ * @param boolean $reset Whether we need to reset the fields cache or not.
+ * @param boolean $cache Whether we need to cache the the fields or not.
  * @return array of fields.
  */
-function ds_get_fields($module, $type_name, $build_mode, $extra = array(), $reset = FALSE) {
+function ds_get_fields($module, $type_name, $build_mode, $extra = array(), $reset = FALSE, $cache = TRUE) {
   static $static_fields = array();
   if (!isset($static_fields[$module][$type_name][$build_mode])) {
 
@@ -358,9 +377,17 @@ function ds_get_fields($module, $type_name, $build_mode, $extra = array(), $rese
       foreach (module_implements('ds_fields') as $prefix) {
         $function = $prefix .'_ds_fields';
         $all_fields = $function($type_name, $build_mode, $extra);
-        foreach ($all_fields as $key => $field_results) {
-          if ($key === $module) {
-            $fields = array_merge($field_results, $fields);
+        if (!empty($all_fields)) {
+          foreach ($all_fields as $key => $field_results) {
+            if ($key === $module) {
+              $fields = array_merge($field_results, $fields);
+              foreach ($fields as $key => $field) {
+                $exclude = (isset($field['exclude'][$type_name]) && $field['exclude'][$type_name] === $type_name) ? TRUE : FALSE;
+                if ($exclude) {
+                  unset($fields[$key]);
+                }
+              }
+            }
           }
         }
       }
@@ -392,7 +419,10 @@ function ds_get_fields($module, $type_name, $build_mode, $extra = array(), $rese
       else {
         $ds_fields_cached[$module][$type_name][$build_mode] = $fields;
       }
-      variable_set('ds_fields_cached', $ds_fields_cached);
+      // Do we cache or not ?
+      if ($cache) {
+        variable_set('ds_fields_cached', $ds_fields_cached);
+      }
     }
     else {
       $fields = $ds_fields_cached[$module][$type_name][$build_mode];
@@ -487,6 +517,7 @@ function ds_eval_block($key, $field, &$object) {
         case BLOCK_TEMPLATE:
           global $theme_key;
           $block = (object) $block;
+          $block->region = NULL;
           $block->module = $module;
           $block->delta = $delta;
           $block_title = db_result(db_query("SELECT title FROM {blocks} WHERE module = '%s' AND delta = '%s' AND theme = '%s'", $module, $delta, $theme_key));
@@ -588,11 +619,25 @@ function ds_regions($regions = 'all', $render = FALSE) {
 
 /**
  * Import default data from modules.
+ *
+ * @param string $module The module to import.
+ * @param string $type The object type to import.
+ * @param string $build_mode The build mode to import.
  */
-function ds_import_default_data() {
+function ds_import_default_data($module = '', $type = '', $build_mode = '') {
   $data = module_invoke_all('ds_default_settings');
   if (!empty($data)) {
     module_load_include('inc', 'ds', 'includes/ds.tools');
-    ds_import_data($data, FALSE, FALSE);
+    ds_import_data($data, FALSE, FALSE, $module, $type, $build_mode);
   }
+}
+
+/**
+ * Helper function to check access.
+ */
+function _ds_menu_access($string1, $string2) {
+  if (user_access($string1) && user_access($string2)) {
+    return TRUE;
+  }
+  return FALSE;
 }

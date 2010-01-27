@@ -1,5 +1,5 @@
 <?php
-// $Id: ds.admin.inc,v 1.1.2.6 2009/11/28 22:39:15 swentel Exp $
+// $Id: ds.admin.inc,v 1.1.2.7 2010/01/25 19:24:48 swentel Exp $
 
 /**
  * @file
@@ -23,6 +23,7 @@ function ds_general_page() {
   $fieldset = array();
   $fieldset['#title'] = 'General';
   $fieldset['#children'] = $childs;
+  $fieldset['#attributes'] = array();
   $output = theme('fieldset', $fieldset);
 
   return $output;

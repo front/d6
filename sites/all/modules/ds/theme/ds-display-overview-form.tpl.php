@@ -1,5 +1,5 @@
 <?php
-// $Id: ds-display-overview-form.tpl.php,v 1.1.2.4 2009/12/28 21:47:19 swentel Exp $
+// $Id: ds-display-overview-form.tpl.php,v 1.1.2.6 2010/01/24 17:31:25 swentel Exp $
 
 /**
  * @file
@@ -13,7 +13,6 @@
  *   Properties (human_name, weight, stickyorder, build_mode, class, label_class)
  */
 
-print $settings_status;
 print $exclude_build_mode;
 
 if ($rows): ?>
@@ -56,7 +55,7 @@ if ($rows): ?>
           $count = 0;
           foreach ($rows[$region] as $row): ?>
             <tr class="<?php print $count % 2 == 0 ? 'odd' : 'even'; ?> <?php print $row->class ?>">
-              <td><span class="<?php print $row->label_class; ?>"><?php print $row->human_name; ?></span></td>
+              <td class="ds-label"><span class="<?php print $row->label_class; ?>"><?php print $row->human_name; ?></span><span class="label-edit"><?php print $row->{$build_mode}->label_edit; ?></span><?php print $row->{$build_mode}->label_value; ?></td>
               <td><?php print $row->{$build_mode}->label; ?></td>
               <td><?php print $row->{$build_mode}->format; ?></td>
               <td><?php print $row->{$build_mode}->region; ?></td>

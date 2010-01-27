@@ -1,5 +1,5 @@
 <?php
-// $Id: poormanscron.install,v 1.2.2.5 2009/12/24 20:06:35 davereid Exp $
+// $Id: poormanscron.install,v 1.2.2.6 2010/01/17 00:23:12 davereid Exp $
 
 /**
  * @file
@@ -26,5 +26,12 @@ function poormanscron_update_6200() {
   variable_del('poormanscron_interval');
   variable_del('poormanscron_retry_interval');
   variable_del('poormanscron_log_cron_runs');
+  return array();
+}
+
+/**
+ * JavaScript variable names have changed.
+ */
+function poormanscron_update_6201() {
   return array();
 }

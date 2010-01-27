@@ -1,5 +1,5 @@
 <?php
-// $Id: nd.buildmodes.test,v 1.1.2.11 2009/10/26 18:58:07 swentel Exp $
+// $Id: nd.buildmodes.test,v 1.1.2.11.2.2 2010/01/26 12:52:17 swentel Exp $
 
 /**
  * @file
@@ -29,7 +29,7 @@ class NodeDisplaysBuildModes extends DrupalWebTestCase {
    * Debug helper function. Writes values away to a text file in the files directory.
    */
   function _debugHelper($value, $writetype = 'a+') {
-    $debug = fopen($this->originalFileDirectory .'/simpletestdebug.txt', 'a+');
+    $debug = fopen($this->originalFileDirectory .'/simpletestdebug.txt', $writetype);
     fwrite($debug, print_r($value, TRUE) ."\n");
     fclose($debug);
   }
@@ -51,7 +51,7 @@ class NodeDisplaysBuildModes extends DrupalWebTestCase {
    * Test matrix build modes.
    */
   function testBuildModesMatrix() {
-    $admin_user = $this->drupalCreateUser(array('administer content types', 'administer nodes'));
+    $admin_user = $this->drupalCreateUser(array('administer nodes', 'access display suite', 'administer nd', 'configure layout for nd', 'export and import settings', 'revert overridden settings', 'use PHP in custom fields'));
     $this->drupalLogin($admin_user);
     $exclude_build_modes = variable_get('nd_buildmodes_exclude', array());
     $this->assertEqual(array(), $exclude_build_modes, t('Preprocess exclude is empty'), t('ND settings exclude'));
@@ -123,7 +123,7 @@ class NodeDisplaysBuildModes extends DrupalWebTestCase {
    * Test build modes.
    */
   function testNdBuildModes() {
-    $admin_user = $this->drupalCreateUser(array('administer content types', 'administer nodes'));
+    $admin_user = $this->drupalCreateUser(array('administer nodes', 'access display suite', 'administer nd', 'configure layout for nd', 'export and import settings', 'revert overridden settings', 'use PHP in custom fields'));
     $this->drupalLogin($admin_user);
     $this->drupalGet('admin/ds/nd/buildmodes');
 

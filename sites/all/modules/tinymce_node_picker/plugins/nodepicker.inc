@@ -1,5 +1,5 @@
 <?php
-// $id$
+// $Id: nodepicker.inc,v 1.5 2010/01/15 12:27:39 blixxxa Exp $
 
 /**
  * @file
@@ -18,7 +18,7 @@ function tinymce_node_picker_nodepicker_plugin() {
     'settings' => array(
     	'dialog' => array(
     		'title' => t('Test'),
-				'url' => base_path() . 'index.php?q=admin/tinymce-node-picker',
+				'url' => url('admin/tinymce-node-picker'),
 				'width' => 640,
 				'height' => 480,
 			),

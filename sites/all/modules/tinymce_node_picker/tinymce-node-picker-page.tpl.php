@@ -1,5 +1,5 @@
 <?php
-// $id$
+// $Id: tinymce-node-picker-page.tpl.php,v 1.5 2010/01/15 08:31:58 blixxxa Exp $
 /**
  * @file
  * Theme template to display a TinyMCE Node Picker dialog page.

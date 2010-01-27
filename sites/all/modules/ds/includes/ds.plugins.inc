@@ -1,5 +1,5 @@
 <?php
-// $Id: ds.plugins.inc,v 1.1.2.2 2009/12/28 18:31:35 swentel Exp $
+// $Id: ds.plugins.inc,v 1.1.2.3 2010/01/26 10:08:28 swentel Exp $
 
 /**
  * @file
@@ -25,7 +25,7 @@ function ds_plugins($form_state, $module) {
     foreach ($plugins as $key => $plugin) {
       $form['plugin_'. $plugin['key']] = array(
         '#type' => 'checkbox',
-        '#default_value' => $plugin_settings[$plugin['key']]['status'],
+        '#default_value' => isset($plugin_settings[$plugin['key']]['status']) ? $plugin_settings[$plugin['key']]['status'] : 0,
       );
     }
   }

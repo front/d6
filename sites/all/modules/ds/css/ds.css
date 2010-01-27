@@ -1,4 +1,4 @@
-/* $Id: ds.css,v 1.1 2009/10/18 15:25:22 swentel Exp $ */
+/* $Id: ds.css,v 1.1.2.5 2010/01/26 08:44:39 swentel Exp $ */
 
 #fields td.region {
   font-weight: bold;
@@ -26,6 +26,23 @@ tr.region-css-disabled  {
 	margin-top: 0;
 	margin-bottom: 0;
 }
+span.label-field, span.label-edit {
+  padding:2px;
+  font-size-adjust:none;
+  font-stretch:normal;
+  font-style:normal;
+  font-variant:normal;
+  font-weight:normal;
+  line-height:24px;
+}
+span.label-field {
+  font-size: 13px;
+  float: left;
+}
+span.label-edit {
+  font-size: 11px;
+  float: right;
+}
 #fields-content {
 	display: block;
 }
@@ -41,4 +58,13 @@ tr.region-css-disabled  {
 #plugin-tab {
   float: left;
   margin-left: 20px;
+}
+#ds-overview-page .ds-row-title {
+  font-weight: bold;
+  background: #E4F0F8 none repeat scroll 0 0;
+  font-size: 14px;
+}
+#ds-overview-page .ds-row-type {
+  background: #fff none repeat scroll 0 0;
+  border: 0 none;
 }

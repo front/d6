@@ -8,9 +8,9 @@ features[views][] = "tinymce_linkpicker"
 dependencies[] = "views"
 dependencies[] = "wysiwyg"
 
-; Information added by drupal.org packaging script on 2009-12-03
-version = "6.x-2.0-beta4"
+; Information added by drupal.org packaging script on 2010-01-25
+version = "6.x-2.0"
 core = "6.x"
 project = "tinymce_node_picker"
-datestamp = "1259853687"
+datestamp = "1264406412"
 

@@ -1,10 +1,18 @@
 <?php
-// $Id: nd.module,v 1.1.2.123.2.10 2009/12/29 20:23:30 swentel Exp $
+// $Id: nd.module,v 1.1.2.123.2.16 2010/01/26 17:27:44 swentel Exp $
 
 /**
  * @file
  * Node displays.
  */
+
+/**
+ * Implementation of hook_registry_alter().
+ */
+function nd_theme_registry_alter(&$registry) {
+  $path = drupal_get_path('module', 'nd') .'/templates';
+  array_unshift($registry['node']['theme paths'], $path);
+}
 
 /**
  * Implementation of hook_nodeapi().
@@ -95,12 +103,15 @@ function _nd_preprocess_node(&$vars, $hook) {
 
   $node = $vars['node'];
 
-  // Add node-content_type-build_mode(-nid) template suggestion.
-  $vars['template_files'][] = 'node-'. $node->type .'-'. $node->build_mode;
-  $vars['template_files'][] = 'node-'. $node->type .'-'. $node->build_mode .'-'. $node->nid;
+  // Add nd-content_type-build_mode(-nid) template suggestion.
+  $vars['template_files'][] = 'nd';
+  $vars['template_files'][] = 'nd-'. $node->type;
+  $vars['template_files'][] = 'nd-'. $node->type .'-'. $node->build_mode;
+  $vars['template_files'][] = 'nd-'. $node->type .'-'. $node->build_mode .'-'. $node->nid;
 
   // Break all the rendering if needed.
   if (!$node->render_by_ds) {
+    $vars['template_files'][] = 'node';
     return;
   }
 
@@ -163,8 +174,8 @@ function nd_ds_api() {
 
   $help = array(
     t('<h3>Node displays</h3>
-      <p>This module comes with a node.tpl.php, available in the templates folder, which is optimized for use with Node Displays. Copy the file to your themes folder so you can use it or look into the file and make changes to your own version.</p>
-      <p>You can create a file called <strong>node-<em>node_type</em>-<em>build_mode</em>.tpl.php</strong> or <strong>node-<em>node_type</em>-<em>build_mode</em>-<em>nid</em>.tpl.php</strong> for even more fine-grained theming.</p>
+      <p>This module comes with a nd.tpl.php, available in the templates folder, which is optimized for use with Node Displays. You can copy the file to your themes folder to use your own version if you want.</p>
+      <p>You can create a file called <strong>nd-<em>node_type</em>.tpl.php</strong>, <strong>nd-<em>node_type</em>-<em>build_mode</em>.tpl.php</strong> or <strong>nd-<em>node_type</em>-<em>build_mode</em>-<em>nid</em>.tpl.php</strong> for even more fine-grained theming.</p>
       <p>If you exclude the RSS build mode, the default node feed is generated, but might render strange content. Make sure you do not choose the "Titles only" as your feed content setting, otherwhise, this screen will not have any effect. Choosing either "Full text" or "Titles + teaser" does not matter, this screen will have effect on both settings, apart from the read more link. Remember that some fields like upload and terms are added automatically to the feed and that this manipulates the $description variable, it does not add extra keys to the feed.</p>')
   );
 
@@ -203,7 +214,11 @@ function nd_theme() {
 }
 
 /**
- * Implementation of hook_ds_buildmodes_alter().
+ * Implementation of hook_ds_buildmodes_alter().    'read_more' => array(
+      'title' => t('Read more'),
+      'code' => '<?php echo l(t("Read more"), "node/$object->nid"); ?>',
+      'type' => DS_FIELD_OVERRIDABLE,
+    ),
  */
 function nd_ds_buildmodes_alter(&$build_modes) {
   $build_modes['nd']['full']['weight'] = -1;
@@ -244,21 +259,21 @@ function nd_ds_fields($type_name, $build_mode, $extra) {
     'read_more' => array(
       'title' => t('Read more'),
       'code' => '<?php echo l(t("Read more"), "node/$object->nid"); ?>',
-      'type' => DS_FIELD_OVERRIDABLE,
+      'type' => DS_FIELD_DEFAULT,
     ),
     'post_date' => array(
       'title' => t('Post date'),
       'code' => '<?php echo format_date($object->created, "custom", "d/m/Y"); ?>',
-      'type' => DS_FIELD_OVERRIDABLE,
+      'type' => DS_FIELD_DEFAULT,
     ),
   );
 
   // Check for body.
-  if ($extra['has_body'] == TRUE) {
+  if (isset($extra['has_body']) && $extra['has_body'] == TRUE) {
     $fields['body'] = array(
       'title' => t('Core body'),
       'formatters' => array(
-        'nd_bodyfield' => t('Body')
+        'nd_bodyfield' => t('Default')
       ),
       'type' => DS_FIELD_THEME,
     );
@@ -275,6 +290,16 @@ function nd_ds_fields($type_name, $build_mode, $extra) {
     $fields['files'] = array(
       'title' => t('Core upload'),
       'type' => DS_FIELD_IGNORE,
+    );
+  }
+
+  if (module_exists('book') && $type_name == 'book') {
+    $fields['book_navigation'] = array(
+      'title' => t('Book navigation'),
+      'type' => DS_FIELD_FUNCTION,
+      'formatters' => array(
+        'nd_book_navigation' => t('Book navigation'),
+      ),
     );
   }
 
@@ -318,4 +343,25 @@ function theme_nd_title_p_nolink(&$node) {
 
 function theme_nd_title_p_link(&$node) {
   $node->title_rendered = '<p>'. l($node->title, 'node/'. $node->nid) .'</p>';
+}
+
+/**
+ * Book navigation.
+ */
+function nd_book_navigation(&$node) {
+  $content = '';
+  if (isset($node->content['book_navigation'])) {
+    if (isset($node->content['book_navigation']['#value'])) {
+      $content = $node->content['book_navigation']['#value'];
+    }
+    elseif (isset($node->book['bid']) && !empty($node->book['bid'])) {
+      $content = theme('book_navigation', $node->book);
+    }
+  }
+  else {
+    if (isset($node->book['bid']) && !empty($node->book['bid'])) {
+      $content = theme('book_navigation', $node->book);
+    }
+  }
+  $node->book_navigation_rendered = $content;
 }

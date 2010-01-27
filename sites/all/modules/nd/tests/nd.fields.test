@@ -1,5 +1,5 @@
 <?php
-// $Id: nd.fields.test,v 1.1.2.13 2009/10/24 13:32:29 swentel Exp $
+// $Id: nd.fields.test,v 1.1.2.13.2.6 2010/01/27 10:35:23 swentel Exp $
 
 /**
  * @file
@@ -29,7 +29,7 @@ class NodeDisplaysFields extends DrupalWebTestCase {
    * Debug helper function. Writes values away to a text file in the files directory.
    */
   function _debugHelper($value, $writetype = 'a+') {
-    $debug = fopen($this->originalFileDirectory .'/simpletestdebug.txt', 'a+');
+    $debug = fopen($this->originalFileDirectory .'/simpletestdebug.txt', $writetype);
     fwrite($debug, print_r($value, TRUE) ."\n");
     fclose($debug);
   }
@@ -38,7 +38,7 @@ class NodeDisplaysFields extends DrupalWebTestCase {
    * Test custom fields.
    */
   function testNdCustomFields() {
-    $admin_user = $this->drupalCreateUser(array('administer content types', 'administer nodes'));
+    $admin_user = $this->drupalCreateUser(array('administer nodes', 'access display suite', 'administer nd', 'configure layout for nd', 'export and import settings', 'revert overridden settings', 'use PHP in custom fields'));
     $this->drupalLogin($admin_user);
     $this->drupalGet('admin/ds/nd/fields');
 
@@ -138,11 +138,22 @@ class NodeDisplaysFields extends DrupalWebTestCase {
       'title[full][region]' => 'header',
       'test_field_real[full][region]' => 'middle',
     );
-    $this->drupalPost('admin/ds/layout/page/display', $edit, t('Save'));
+    $this->drupalPost('admin/ds/layout/page/full', $edit, t('Save'));
 
     // See if it's rendered.
     $this->drupalGet('node/'. $page_node->nid);
     $this->assertText('Day: '. date("d", $page_node->created), t('Custom field executed.'), t('Fields'));
+
+    // Change same field and see if it's changed (cached fields clear test);
+    $edit = array(
+      'code_key' => 'test_field_real',
+      'code_title' => 'Real field',
+      'code_code' => '<?php echo "Day month: ". date("d M", $object->created); ?>',
+    );
+    $this->drupalPost('admin/ds/nd/fields/edit/test_field_real', $edit, t('Save code field'));
+    $this->drupalGet('node/'. $page_node->nid);
+    $this->assertText('Day month: '. date("d M", $page_node->created), t('Custom field executed and changed (cached fields is cleared).'), t('Fields'));
+
 
     // Test with token module (if available).
     $token = drupal_get_filename('module', 'token');
@@ -159,5 +170,120 @@ class NodeDisplaysFields extends DrupalWebTestCase {
       $this->drupalGet('node/'. $page_node->nid);
       $this->assertText('Day: '. date("j", $page_node->created), t('Custom field executed with token support.'), t('Fields'));
     }
+  }
+
+  /**
+   * Test custom block fields.
+   */
+  function testNdCustomBlockFields() {
+    $admin_user = $this->drupalCreateUser(array('administer nodes', 'access display suite', 'administer nd', 'configure layout for nd', 'export and import settings', 'revert overridden settings', 'use PHP in custom fields'));
+    $this->drupalLogin($admin_user);
+    $this->drupalGet('admin/ds/nd/fields');
+
+    // Valid field.
+    $edit = array(
+      'block_key' => 'test_field',
+      'block_title' => 'Test field label',
+      'block_block' => 'user|3',
+      'block_render' => BLOCK_TEMPLATE,
+    );
+    $this->drupalPost('admin/ds/nd/fields', $edit, t('Save block field'));
+    $fields = variable_get('nd_fields', array());
+    $this->assertTrue(array_key_exists('test_field', $fields), t('test_field exists'), t('Block fields'));
+    $this->assertEqual($fields['test_field']['title'], $edit['block_title'], t('Title equals Test field label'), t('Block fields'));
+    $this->assertEqual($fields['test_field']['block'], $edit['block_block'], t('Code equals user|3'), t('Block fields'));
+    $this->assertEqual($fields['test_field']['render'], $edit['block_render'], t('Code equals '. BLOCK_TEMPLATE), t('Block fields'));
+
+    // Create a node and set some fields.
+    $page_node = $this->drupalCreateNode();
+    $edit = array(
+      'title[full][region]' => 'header',
+      'test_field[full][region]' => 'middle',
+    );
+    $this->drupalPost('admin/ds/layout/page/display', $edit, t('Save'));
+
+    // Block rendering through template.
+    $this->drupalGet('node/'. $page_node->nid);
+    $this->assertText('Who\'s online', t('Block title found'), t('Block fields'));
+    $this->assertText('There are currently 1 user and 0 guests online.', t('Block text found'), t('Block fields'));
+    $this->assertRaw('block-user-3', t('Block ID found'), t('Block fields'));
+
+    // Block rendering without template.
+    $edit = array(
+      'block_key' => 'test_field',
+      'block_title' => 'Test field label',
+      'block_block' => 'user|3',
+      'block_render' => BLOCK_TITLE_CONTENT,
+    );
+    $this->drupalPost('admin/ds/nd/fields/edit/test_field', $edit, t('Save block field'));
+    $this->drupalGet('node/'. $page_node->nid);
+    $this->assertText('Who\'s online', t('Block title found'), t('Block fields'));
+    $this->assertText('There are currently 1 user and 0 guests online.', t('Block text found'), t('Block fields'));
+    $this->assertNoRaw('block-user-3', t('Block ID found'), t('Block fields'));
+
+    // Only block content.
+    $edit = array(
+      'block_key' => 'test_field',
+      'block_title' => 'Test field label',
+      'block_block' => 'user|3',
+      'block_render' => BLOCK_CONTENT,
+    );
+    $this->drupalPost('admin/ds/nd/fields/edit/test_field', $edit, t('Save block field'));
+    $this->drupalGet('node/'. $page_node->nid);
+    $this->assertNoText('Who\'s online', t('Block title found'), t('Block fields'));
+    $this->assertText('There are currently 1 user and 0 guests online.', t('Block text found'), t('Block fields'));
+    $this->assertNoRaw('block-user-3', t('Block ID found'), t('Block fields'));
+  }
+
+
+  /**
+   * Test custom field labels.
+   */
+  function testNdCustomLabels() {
+    $admin_user = $this->drupalCreateUser(array('administer nodes', 'access display suite', 'administer nd', 'configure layout for nd', 'export and import settings', 'revert overridden settings', 'use PHP in custom fields'));
+    $this->drupalLogin($admin_user);
+    $this->drupalGet('admin/ds/nd/fields');
+
+    $fields = variable_get('nd_fields', array());
+
+    // Add a new real field.
+    $edit = array(
+      'code_key' => 'test_field_real',
+      'code_title' => 'Real field',
+      'code_code' => '<?php echo "Output of a custom field"; ?>',
+    );
+    $this->drupalPost('admin/ds/nd/fields', $edit, t('Save code field'));
+
+    // Make sure we can use the fields for this test.
+    $edit = array(
+      'title[full][region]' => 'header',
+      'title[full][label][format]' => 'above',
+      'test_field_real[full][region]' => 'middle',
+      'test_field_real[full][label][format]' => 'above',
+    );
+    $this->drupalPost('admin/ds/layout/page/full', $edit, t('Save'));
+
+    // Create page.
+    $page_node = $this->drupalCreateNode(array('title' => 'MyTitle'));
+
+    // Check the value of the labels.
+    $this->assertText('Title', t('Title label is shown on page.'), t('Labels'));
+    $this->assertText('Real field', t('Custom field label is shown on page.'), t('Labels'));
+
+    // Change the label of this new real field.
+    // @note Run this patch on D6 to allow posts to hidden fields.
+    // @see http://drupal.org/node/488810#comment-1693662 .
+    $edit = array(
+      'title[full][label_value]' => 'New Title',
+      'test_field_real[full][label_value]' => 'Unreal field',
+    );
+    $this->drupalPost('admin/ds/layout/page/full', $edit, t('Save'));
+
+    // See if the label values have changed.
+    $out = $this->drupalGet('node/'. $page_node->nid);
+    //$this->_debugHelper($out, 'w');
+    $this->assertText('New Title', t('The title label is changed.'), t('Labels'));
+    $this->assertText('Unreal field', t('The custom field label is changed.'), t('Labels'));
+
   }
 }

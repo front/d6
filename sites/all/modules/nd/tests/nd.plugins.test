@@ -1,5 +1,5 @@
 <?php
-// $Id: nd.plugins.test,v 1.1.2.4 2009/10/27 17:02:05 swentel Exp $
+// $Id: nd.plugins.test,v 1.1.2.4.2.3 2010/01/27 10:35:23 swentel Exp $
 
 /**
  * @file
@@ -29,7 +29,7 @@ class NodeDisplaysPlugins extends DrupalWebTestCase {
    * Debug helper function. Writes values away to a text file in the files directory.
    */
   function _debugHelper($value, $writetype = 'a+') {
-    $debug = fopen($this->originalFileDirectory .'/simpletestdebug.txt', 'a+');
+    $debug = fopen($this->originalFileDirectory .'/simpletestdebug.txt', $writetype);
     fwrite($debug, print_r($value, TRUE) ."\n");
     fclose($debug);
   }
@@ -51,7 +51,7 @@ class NodeDisplaysPlugins extends DrupalWebTestCase {
    * Tests for plugins.
    */
   function testPlugins() {
-    $admin_user = $this->drupalCreateUser(array('administer content types', 'administer nodes'));
+    $admin_user = $this->drupalCreateUser(array('administer nodes', 'access display suite', 'administer nd', 'configure layout for nd', 'export and import settings', 'revert overridden settings', 'use PHP in custom fields'));
     $this->drupalLogin($admin_user);
 
     $plugin_settings = variable_get('nd_plugin_settings', array());
@@ -74,7 +74,7 @@ class NodeDisplaysPlugins extends DrupalWebTestCase {
       'author[full][region]' => 'middle',
       'body[full][region]' => 'middle',
     );
-    $this->drupalPost('admin/ds/layout/page/display', $edit, t('Save'));
+    $this->drupalPost('admin/ds/layout/page/full', $edit, t('Save'));
 
     // Test that footer is not rendered with the emptyregionrender plugin enabled.
     $this->drupalGet('node/'. $page_node->nid);
@@ -87,7 +87,7 @@ class NodeDisplaysPlugins extends DrupalWebTestCase {
       'body[full][region]' => 'middle',
       'emptyregionrender[region-render-footer]' => TRUE,
     );
-    $this->drupalPost('admin/ds/layout/page/display', $edit, t('Save'));
+    $this->drupalPost('admin/ds/layout/page/full', $edit, t('Save'));
 
     // Test that footer is rendered with the emptyregionrender plugin enabled.
     $this->drupalGet('node/'. $page_node->nid);

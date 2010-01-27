@@ -1,5 +1,5 @@
 <?php
-// $Id: poormanscron.module,v 1.22.2.7 2009/12/24 20:05:19 davereid Exp $
+// $Id: poormanscron.module,v 1.22.2.8 2010/01/17 00:23:12 davereid Exp $
 
 /**
  * @file
@@ -24,7 +24,11 @@ function poormanscron_menu() {
 function poormanscron_init() {
   if (poormanscron_run_cron_check_access()) {
     drupal_add_js(drupal_get_path('module', 'poormanscron') . '/poormanscron.js');
-    drupal_add_js(array('cronCheck' => variable_get('cron_last', 0) + variable_get('cron_safe_threshold', 10800)), 'setting');
+    $settings = array(
+      'basePath' => url('poormanscron'),
+      'runNext' => variable_get('cron_last', 0) + variable_get('cron_safe_threshold', 10800),
+    );
+    drupal_add_js(array('cron' => $settings), 'setting');
   }
 }
 

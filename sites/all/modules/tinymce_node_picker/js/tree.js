@@ -1,6 +1,6 @@
-// $id$
+// $Id: tree.js,v 1.4 2010/01/15 08:31:58 blixxxa Exp $
 Drupal.behaviors.tinyMCENodePickerMenu = function (context) {
-	$("ul.menu ul).css("display", "none");
+	$("ul.menu ul").css("display", "none");
 	$("ul.menu li.expanded").removeClass("expanded").addClass("collapsed");
 	$("ul.menu li").click(function(){
 		if($(this).hasClass("collapsed")) {

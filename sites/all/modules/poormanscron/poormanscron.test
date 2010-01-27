@@ -1,5 +1,5 @@
 <?php
-// $Id: poormanscron.test,v 1.1.2.1 2009/09/29 22:31:58 davereid Exp $
+// $Id: poormanscron.test,v 1.1.2.2 2010/01/17 16:53:37 davereid Exp $
 
 /**
  * @file
@@ -31,7 +31,7 @@ class PoormanscronUnitTest extends DrupalWebTestCase {
     variable_set('cron_last', $cron_last);
     variable_set('cron_safe_threshold', $cron_safe_threshold);
     $this->drupalGet('');
-    $this->assertRaw('"cronCheck": ' . ($cron_last + $cron_safe_threshold));
+    $this->assertRaw('"runNext": ' . ($cron_last + $cron_safe_threshold));
     $this->drupalGet('poormanscron/run-cron-check');
     $this->assertTrue($cron_last == variable_get('cron_last', NULL), t('Cron does not run when the cron threshold is not passed.'));
 
@@ -39,7 +39,7 @@ class PoormanscronUnitTest extends DrupalWebTestCase {
     $cron_last = time() - 200;
     variable_set('cron_last', $cron_last);
     $this->drupalGet('');
-    $this->assertRaw('"cronCheck": ' . ($cron_last + $cron_safe_threshold));
+    $this->assertRaw('"runNext": ' . ($cron_last + $cron_safe_threshold));
     $this->drupalGet('poormanscron/run-cron-check');
     $this->assertTrue($cron_last < variable_get('cron_last', NULL), t('Cron runs when the cron threshold is passed.'));
 
@@ -52,7 +52,7 @@ class PoormanscronUnitTest extends DrupalWebTestCase {
     $cron_last = time() - 200;
     variable_set('cron_last', $cron_last);
     $this->drupalGet('');
-    $this->assertNoRaw('cronCheck');
+    $this->assertNoRaw('runNext');
     $this->drupalGet('poormanscron/run-cron-check');
     $this->assertTrue($cron_last == variable_get('cron_last', NULL), t('Cron does not run when the cron threshold is disabled.'));
   }
