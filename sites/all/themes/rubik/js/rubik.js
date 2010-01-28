@@ -29,6 +29,21 @@ Drupal.rubikToggle = {
    * Initialize and attach handlers.
    */
   'attach': function(context) {
+    // If there are both main column and side column buttons,
+    // only show the main column buttons if the user scrolls past
+    // the ones to the side.
+    if ($('div.column-main div.buttons').size()) {
+      var offset = $('div.column-side div.buttons').height() + $('div.column-side div.buttons').offset().top;
+      $(window).scroll(function () {
+        if ($(this).scrollTop() > offset) {
+          $('div.column-main div.buttons').show();
+        }
+        else {
+          $('div.column-main div.buttons').hide();
+        }
+      });
+    }
+
     var args = Drupal.rubikToggle.parseHash(window.location.hash.substring(1));
     $('a.toggler:not(.rubik-processed)', context).each(function() {
       var toggleable, params;
@@ -69,7 +84,7 @@ Drupal.rubikToggle = {
       $(this).addClass('rubik-processed');
       return false;
     });
-    $('a:not(.rubik-processed)', context).each(function() {
+    $('div.help-links a:not(.rubik-processed)', context).each(function() {
       if ($(this).attr('href')) {
         // Rewrite this link's hash string when clicked.
         $(this).click(function() {

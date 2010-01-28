@@ -1,5 +1,5 @@
 <?php
-// $Id: ds.module,v 1.1.2.33 2010/01/27 10:35:37 swentel Exp $
+// $Id: ds.module,v 1.1.2.36 2010/01/27 23:22:28 stalski Exp $
 
 /**
  * Core functions for the Display Suite module.
@@ -112,7 +112,7 @@ function ds_api_info($module, $type_name = 'all') {
     $api_data = $function();
     $api_info[$module][$type_name] = $api_data;
     if (!isset($api_info[$module][$type_name]['extra'])) {
-      $api_info[$module][$type_name]['extra'] = array();
+    $api_info[$module][$type_name]['extra'] = array();
     }
 
     // Extra info needed or not.
@@ -278,8 +278,8 @@ function ds_render_content($object, $module, $vars, $theme_function = 'ds_field'
         $field_content = isset($vars[$key .'_rendered']) ? $vars[$key .'_rendered'] : '';
         if (!empty($field_content)) {
           $field_key = strtr($key, '_', '-');
-          // Try to change the label if this is configured.
-          if (isset($display_settings[$object->build_mode]['fields'][$key]['label_value'])) {
+          // Try to change the label if this is configured and label is not hidden.
+          if (isset($display_settings[$object->build_mode]['fields'][$key]['label_value']) && $display_settings[$object->build_mode]['fields'][$key]['label_value'] != 'hidden') {
             $object->ds_fields[$key]['title'] = t(check_plain($display_settings[$object->build_mode]['fields'][$key]['label_value']));
           }
           $region_content .= theme($theme_function, $field_content, $field_key, $object->ds_fields[$key]);
@@ -471,12 +471,13 @@ function ds_get_build_modes($module = NULL, $reset = FALSE) {
 function ds_plugins_process($module, $object_type, $display_settings, &$vars, &$display) {
   $plugins = variable_get($module .'_plugin_settings', array());
   if (!empty($plugins)) {
-    foreach ($plugins as $key => $plugin) {
-      if (isset($plugin['filename'])) {
-        require_once($plugin['filename']);
+    foreach ($plugins as $key => $data) {
+      if (isset($data['filename']) && isset($data['class'])) {
+        require_once($data['filename']);
+        $class = $data['class'];
+        $plugin = new $class();
+        $plugin->execute($vars, $display, $display_settings, $object_type);
       }
-      $function = $plugin['process_callback'];
-      $function($vars, $display, $display_settings, $object_type);
     }
   }
 }
@@ -618,7 +619,7 @@ function ds_regions($regions = 'all', $render = FALSE) {
 }
 
 /**
- * Import default data from modules.
+ * Import default display data from modules.
  *
  * @param string $module The module to import.
  * @param string $type The object type to import.
@@ -634,9 +635,12 @@ function ds_import_default_data($module = '', $type = '', $build_mode = '') {
 
 /**
  * Helper function to check access.
+ *
+ * @param string $perm_1 A permission.
+ * @param string $perm_2 A permission.
  */
-function _ds_menu_access($string1, $string2) {
-  if (user_access($string1) && user_access($string2)) {
+function _ds_menu_access($perm_1, $perm_2) {
+  if (user_access($perm_1) && user_access($perm_2)) {
     return TRUE;
   }
   return FALSE;

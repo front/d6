@@ -6,13 +6,15 @@ core = "6.x"
 engine = "phptemplate"
 
 scripts[] = "js/rubik.js"
-stylesheets[screen][] = "style.css"
+stylesheets[screen][] = "core.css"
 stylesheets[screen][] = "icons.css"
+stylesheets[screen][] = "style.css"
 
 regions[content] = "Content"
+
 ; Information added by fserver
 core = "6.x"
-datestamp = "1261523211"
+datestamp = "1264458591"
 project = "rubik"
 project status url = "http://code.developmentseed.org/fserver"
-version = "6.x-1.0-alpha3"
+version = "6.x-1.0-beta5"

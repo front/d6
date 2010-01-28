@@ -143,9 +143,10 @@ function tao_preprocess_page(&$vars) {
     // Suppress devel output
     $GLOBALS['devel_shutdown'] = FALSE;
   }
-  // Get minimalized CSS
+  // Get minimalized CSS. Add designkit styles back in if needed.
   else {
     $vars['styles'] = drupal_get_css(tao_css_stripped());
+    $vars['styles'] .= isset($vars['designkit']) ? $vars['designkit'] : '';
   }
 
   // Split primary and secondary local tasks
@@ -172,7 +173,7 @@ function tao_preprocess_block(&$vars) {
   $vars['attr'] = $attr;
 
   $vars['hook'] = 'block';
-  $vars['title'] = !empty($vars['block']->subject) ? filter_xss_admin($vars['block']->subject) : '';
+  $vars['title'] = !empty($vars['block']->subject) ? $vars['block']->subject : '';
   $vars['content'] = $vars['block']->content;
   $vars['is_prose'] = ($vars['block']->module == 'block') ? TRUE : FALSE;
 }

@@ -1,10 +1,10 @@
 <?php
-// $Id: ndtest.ds_default.inc,v 1.1.2.4 2010/01/27 10:45:57 swentel Exp $
+// $Id: ndtest.ds_default.inc,v 1.1.2.6 2010/01/27 13:56:55 swentel Exp $
 
 /**
  * @file
  * Display suite default settings.
-*/
+ */
 
 function _ndtest_ds_default_settings() {
   $data = array(
@@ -61,27 +61,34 @@ function _ndtest_ds_default_settings() {
               'label_value' => 'Taxonomy',
               'labelformat' => 'hidden',
             ),
+            'test_key' => array(
+              'weight' => '-19',
+              'format' => '',
+              'region' => 'disabled',
+              'label_value' => 'Test key',
+              'labelformat' => 'hidden',
+            ),
           ),
           'status' => 1,
         ),
         'full' => array(
           'fields' => array(
             'title' => array(
-              'weight' => '-16',
+              'weight' => '-15',
               'format' => 'nd_title_h1_nolink',
               'region' => 'disabled',
               'label_value' => 'Title',
               'labelformat' => 'hidden',
             ),
             'author' => array(
-              'weight' => '-20',
+              'weight' => '-19',
               'format' => 'ds_author_nolink',
               'region' => 'header',
               'label_value' => 'Author',
               'labelformat' => 'hidden',
             ),
             'links' => array(
-              'weight' => '-17',
+              'weight' => '-16',
               'format' => '',
               'region' => 'disabled',
               'label_value' => 'Links',
@@ -95,14 +102,14 @@ function _ndtest_ds_default_settings() {
               'labelformat' => 'hidden',
             ),
             'post_date' => array(
-              'weight' => '-19',
+              'weight' => '-20',
               'format' => '',
               'region' => 'header',
               'label_value' => 'Post date',
               'labelformat' => 'hidden',
             ),
             'body' => array(
-              'weight' => '-20',
+              'weight' => '-19',
               'format' => 'nd_bodyfield',
               'region' => 'middle',
               'label_value' => 'Core body',
@@ -119,7 +126,7 @@ function _ndtest_ds_default_settings() {
               'weight' => '-20',
               'format' => '',
               'region' => 'footer',
-              'label_value' => 'Test',
+              'label_value' => 'Test key',
               'labelformat' => 'hidden',
             ),
           ),
@@ -135,7 +142,7 @@ function _ndtest_ds_fields() {
   $data = array(
     'nd' => array(
       'test_key' => array(
-        'title' => 'Test',
+        'title' => 'Test key',
         'code' => '<?php
 echo "Test key: ". $object->nid;
 ?>',

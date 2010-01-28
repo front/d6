@@ -1,5 +1,5 @@
 <?php
-// $Id: ds.fields.inc,v 1.1.2.17 2010/01/26 17:28:54 swentel Exp $
+// $Id: ds.fields.inc,v 1.1.2.19 2010/01/27 22:06:37 swentel Exp $
 
 /**
  * @file
@@ -328,7 +328,7 @@ function ds_block_field_form($form_state, $module, $all_fields, $object = '', $k
     ),
     '#title' => t('Block render'),
     '#required' => TRUE,
-    '#default_value' => $field['render']
+    '#default_value' => $field['render'],
   );
 
   $form['block_identity']['block_submit'] = array(

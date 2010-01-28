@@ -1,5 +1,5 @@
 <?php
-// $Id: ds.display.inc,v 1.1.2.24 2010/01/25 20:32:42 swentel Exp $
+// $Id: ds.display.inc,v 1.1.2.30 2010/01/28 00:04:40 swentel Exp $
 
 /**
  * @file
@@ -187,7 +187,7 @@ function ds_fields_display_form(&$form, $display_settings) {
     // Populate/override the fields with the saved values
     $form[$field][$build_mode]['label']['format']['#default_value'] = isset($value['display_settings'][$build_mode]['label']['format']) ? $value['display_settings'][$build_mode]['label']['format'] : ds_default_value($display_settings, $build_mode, 'fields', $field, 'labelformat', DS_DEFAULT_LABEL_FORMAT);
 
-    $label_value = t(check_plain(ds_default_value($display_settings, $build_mode, 'fields', $field, 'label_value', $value['title'])));
+    $label_value = ds_default_value($display_settings, $build_mode, 'fields', $field, 'label_value', '');
     $form[$field][$build_mode]['label_value'] = array(
       '#type' => 'hidden',
       '#default_value' => $label_value,
@@ -196,7 +196,7 @@ function ds_fields_display_form(&$form, $display_settings) {
       'attributes' => array('onclick' => 'javascript: Drupal.DisplaySuite.changeLabel(this, "' . $label_value. '"); return false;')
     ));
 
-    $form[$field]['human_name']['#value'] = $label_value;
+    $form[$field]['human_name']['#value'] = !empty($label_value) ? $label_value : $value['title'];
 
     $form[$field]['weight']['#default_value'] = ds_default_value($display_settings, $build_mode, 'fields', $field, 'weight', DS_DEFAULT_WEIGHT);
 
@@ -228,13 +228,14 @@ function ds_plugins_display_form(&$form, $display_settings) {
     $form['#plugin_keys'] = array();
   }
 
-  foreach ($plugins as $key => $plugin) {
-    if (isset($plugin['filename'])) {
-      require_once($plugin['filename']);
+  foreach ($plugins as $key => $data) {
+    if (isset($data['filename'])) {
+      require_once($data['filename']);
     }
-    $function = $plugin['form_callback'];
-    $plugin_form = $function($form, $display_settings);
-    $form['#plugin_keys'][] = $key;
+    $class = $data['class'];
+    $plugin = new $class();
+    $plugin_form = $plugin->plugin_form($form, $display_settings);
+    $form['#plugin_keys'][$key] = $data['title'];
   }
 }
 
@@ -264,7 +265,9 @@ function ds_display_overview_form_submit($form, &$form_state) {
       $display_settings[$build_mode]['fields'][$key]['weight'] = $form_state['values'][$key]['ds_weight'];
       $display_settings[$build_mode]['fields'][$key]['format'] = $form_state['values'][$key][$build_mode]['format'];
       $display_settings[$build_mode]['fields'][$key]['region'] = $form_state['values'][$key][$build_mode]['region'];
+      if (!empty($form_state['values'][$key][$build_mode]['label_value'])) {
       $display_settings[$build_mode]['fields'][$key]['label_value'] = $form_state['values'][$key][$build_mode]['label_value'];
+      }
       $display_settings[$build_mode]['fields'][$key]['labelformat'] = $form_state['values'][$key][$build_mode]['label']['format'];
 
       // Ditch this field, unless it has its storage in another module (ie CCK)
@@ -299,12 +302,15 @@ function ds_plugins_display_submit($form, $form_state, &$display_settings) {
 
   $plugins = variable_get($module .'_plugin_settings', array());
 
-  foreach ($plugins as $key => $plugin) {
-    if (isset($plugin['filename'])) {
-      require_once($plugin['filename']);
+  foreach ($plugins as $key => $data) {
+
+    if (isset($data['filename'])) {
+      require_once($data['filename']);
     }
-    $function = $plugin['submit_callback'];
-    $function($form, $form_state, $display_settings);
+
+    $class = $data['class'];
+    $plugin = new $class();
+    $plugin->plugin_form_submit($form, $form_state, $display_settings);
   }
 }
 
@@ -354,28 +360,28 @@ function ds_field_default_form_properties($build_mode) {
   if (!empty($build_mode)) {
     $field['ds_weight'] = array(
       '#type' => 'weight',
-      '#default_value' => -19,
-      '#delta' => 20,
+      '#default_value' => DS_DEFAULT_WEIGHT,
+      '#delta' => 30,
     );
     $field[$build_mode] = array(
       'label' => array(
         'format' => array(
           '#type' => 'select',
           '#options' => ds_label_options(),
-          '#default_value' => 'hidden',
+          '#default_value' => DS_DEFAULT_LABEL_FORMAT,
         ),
       ),
       'format' => array(
         '#type' => 'select',
         '#options' => array(),
-        '#default_value' => 'default',
+        '#default_value' => DS_DEFAULT_FORMAT,
       ),
       'region' => array(
         '#type' => 'select',
         '#options' => ds_regions(variable_get('ds_build_mode_'. $build_mode, 'all')),
-        '#default_value' => '',
+        '#default_value' => DS_DEFAULT_WEIGHT,
         '#attributes' => array(
-          'class' => 'field-region-select field-region-disabled',
+          'class' => 'field-region-select field-region-'. DS_DEFAULT_REGION,
         ),
       ),
     );

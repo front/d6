@@ -1,4 +1,4 @@
-// $Id: ds.js,v 1.1.2.2 2010/01/25 19:35:38 stalski Exp $
+// $Id: ds.js,v 1.1.2.3 2010/01/27 17:07:51 swentel Exp $
 
 /**
  * Move a field in the fields table from one region to another via select list.
@@ -128,9 +128,11 @@ function toggleFieldOverviewForm() {
 /**
  * Show / hide fields or plugins content.
  */
-function toggleFieldPluginsLink(div_show, div_hide) {
-  $('#' + div_show).show();  
+function toggleFieldPluginsLink(highlight_tab, nonhighlight_tab, div_show, div_hide) {
+  $('#' + div_show).show();
+  $('#' + highlight_tab).addClass('selected');
   $('#' + div_hide).hide();
+  $('#' + nonhighlight_tab).removeClass('selected');
 }
 
 /**

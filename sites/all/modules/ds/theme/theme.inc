@@ -1,5 +1,5 @@
 <?php
-// $Id: theme.inc,v 1.1.2.13 2010/01/25 19:35:38 stalski Exp $
+// $Id: theme.inc,v 1.1.2.14 2010/01/28 00:04:40 swentel Exp $
 
 /**
  * @file
@@ -150,11 +150,11 @@ function template_preprocess_ds_display_overview_form(&$vars) {
   }
 
   // Plugins available.
-  $vars['plugins'] = FALSE;
+  $vars['plugins_tabs'] = array();
+  $vars['plugins_content'] = '';
   if ($form['#plugins'] == TRUE) {
-    $vars['plugins'] = TRUE;
-    $vars['plugins_content'] = '';
-    foreach ($form['#plugin_keys'] as $key) {
+    foreach ($form['#plugin_keys'] as $key => $title) {
+      $vars['plugins_tabs'][$key] = $title;
       $vars['plugins_content'] .= drupal_render($form[$key]);
     }
   }
