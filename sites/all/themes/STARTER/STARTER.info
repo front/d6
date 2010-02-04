@@ -34,6 +34,8 @@ stylesheets[all][] = css/ie7.css
 stylesheets[all][] = css/tabs.css
 stylesheets[all][] = css/typography.css
 stylesheets[print][] = css/print.css
+
+scripts[]   = js/css_browser_selector.js
              
 settings[basic_zen_tabs]             = 1
 settings[basic_wireframe]            = 0
