@@ -1,6 +1,6 @@
-/* $Id: dialog.css,v 1.4 2010/01/15 08:31:58 blixxxa Exp $ */
+/* $Id: dialog.css,v 1.5 2010/02/17 08:19:15 blixxxa Exp $ */
 
-#nodepicker { padding: 10px; }
+.nodepicker { padding: 10px; }
 
 div.admin-inline { display: none !important; }
 

@@ -1,5 +1,5 @@
 <?php 
-// $Id: tinymce_node_picker.module,v 1.18 2010/01/25 07:48:23 blixxxa Exp $
+// $Id: tinymce_node_picker.module,v 1.19 2010/02/16 08:24:18 blixxxa Exp $
 
 /**
  * @file
@@ -103,6 +103,11 @@ function template_preprocess_tinymce_node_picker_page(&$variables) {
   
   // Tabs, workaround for cache problem with local tasks.
   $active_tabs = variable_get('tinymce_node_picker_tabs', array('menu' => 'menu', 'taxonomy' => 'taxonomy'));
+  
+  // Surpress E_WARNING messages from invalid markup.
+  libxml_use_internal_errors(TRUE);
+  
+  // Load markup.
   $tabs = simplexml_load_string(theme('menu_local_tasks'));
   if(!$active_tabs['menu']) {
     unset($tabs->li[1]);
@@ -113,6 +118,9 @@ function template_preprocess_tinymce_node_picker_page(&$variables) {
   if(sizeof($tabs->li) > 1) {
     $variables['tabs'] = $tabs->asXML();  
   }
+  
+  // Return to normal error handling.
+  libxml_use_internal_errors(FALSE);
 }
 
 /**

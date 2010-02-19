@@ -1,5 +1,5 @@
 name = STARTER
-description = Starter theme for Drupal 6
+description = STARTER theme for Drupal 6
 screenshot = css/images/screenshot.gif
 engine = phptemplate
 core = 6.x
@@ -37,8 +37,8 @@ stylesheets[print][] = css/print.css
 
 scripts[]   = js/css_browser_selector.js
              
-settings[basic_zen_tabs]             = 1
-settings[basic_wireframe]            = 0
-settings[basic_block_editing]        = 1
-settings[basic_rebuild_registry]     = 0
+settings[STARTER_zen_tabs]             = 1
+settings[STARTER_wireframe]            = 0
+settings[STARTER_block_editing]        = 1
+settings[STARTER_rebuild_registry]     = 0
 

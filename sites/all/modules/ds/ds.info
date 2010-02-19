@@ -5,8 +5,8 @@ core = "6.x"
 package = "Display suite"
 
 ; Information added by drupal.org packaging script on 2010-02-04
-version = "6.x-1.x-dev"
+version = "6.x-1.0"
 core = "6.x"
 project = "ds"
-datestamp = "1265241932"
+datestamp = "1265317811"
 
