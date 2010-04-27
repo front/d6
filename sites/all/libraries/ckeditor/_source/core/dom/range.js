@@ -133,7 +133,7 @@ CKEDITOR.dom.range = function( document )
 
 			currentNode = levelStartNode.getNext();
 
-			while( currentNode )
+			while ( currentNode )
 			{
 				// Stop processing when the current node matches a node in the
 				// endParents tree or if it is the endNode.
@@ -180,7 +180,7 @@ CKEDITOR.dom.range = function( document )
 			{
 				currentNode = levelStartNode.getPrevious();
 
-				while( currentNode )
+				while ( currentNode )
 				{
 					// Stop processing when the current node matches a node in the
 					// startParents tree or if it is the startNode.
@@ -252,10 +252,10 @@ CKEDITOR.dom.range = function( document )
 		}
 
 		// Cleanup any marked node.
-		if( removeStartNode )
+		if ( removeStartNode )
 			startNode.remove();
 
-		if( removeEndNode && endNode.$.parentNode )
+		if ( removeEndNode && endNode.$.parentNode )
 			endNode.remove();
 	};
 
@@ -278,7 +278,7 @@ CKEDITOR.dom.range = function( document )
 				if ( CKEDITOR.tools.trim( node.getText() ).length )
 					return false;
 				}
-			else if( node.type == CKEDITOR.NODE_ELEMENT )
+			else if ( node.type == CKEDITOR.NODE_ELEMENT )
 			{
 				// If there are non-empty inline elements (e.g. <img />), then we're not
 				// at the start.
@@ -742,15 +742,21 @@ CKEDITOR.dom.range = function( document )
 
 					startOffset = startContainer.getIndex() + 1;
 					startContainer = startContainer.getParent();
-					// Check if it is necessary to update the end boundary.
-					if ( !collapsed && this.startContainer.equals( this.endContainer ) )
+
+					// Check all necessity of updating the end boundary.
+					if ( this.startContainer.equals( this.endContainer ) )
 						this.setEnd( nextText, this.endOffset - this.startOffset );
+					else if ( startContainer.equals( this.endContainer ) )
+						this.endOffset += 1;
 				}
 
 				this.setStart( startContainer, startOffset );
 
 				if ( collapsed )
+				{
 					this.collapse( true );
+					return;
+				}
 			}
 
 			var endContainer = this.endContainer;
@@ -919,7 +925,7 @@ CKEDITOR.dom.range = function( document )
 
 										siblingText = sibling.getText();
 
-										if ( !(/[^\s\ufeff]/).test( siblingText ) )	// Spaces + Zero Width No-Break Space (U+FEFF)
+										if ( (/[^\s\ufeff]/).test( siblingText ) )	// Spaces + Zero Width No-Break Space (U+FEFF)
 											sibling = null;
 										else
 										{
@@ -1078,7 +1084,7 @@ CKEDITOR.dom.range = function( document )
 
 										siblingText = sibling.getText();
 
-										if ( !(/[^\s\ufeff]/).test( siblingText ) )
+										if ( (/[^\s\ufeff]/).test( siblingText ) )
 											sibling = null;
 										else
 										{
@@ -1226,6 +1232,100 @@ CKEDITOR.dom.range = function( document )
 					// one and we're expanding list item contents
 					if ( tailBr )
 						this.setEndAfter( tailBr );
+			}
+		},
+
+		/**
+		 *  Descrease the range to make sure that boundaries
+		 *  always anchor beside text nodes or innermost element.
+		 * @param {Number} mode  ( CKEDITOR.SHRINK_ELEMENT | CKEDITOR.SHRINK_TEXT ) The shrinking mode.
+		 */
+		shrink : function( mode )
+		{
+			// Unable to shrink a collapsed range.
+			if ( !this.collapsed )
+			{
+				mode = mode || CKEDITOR.SHRINK_TEXT;
+
+				var walkerRange = this.clone();
+
+				var startContainer = this.startContainer,
+					endContainer = this.endContainer,
+					startOffset = this.startOffset,
+					endOffset = this.endOffset,
+					collapsed = this.collapsed;
+
+				// Whether the start/end boundary is moveable.
+				var moveStart = 1,
+						moveEnd = 1;
+
+				if ( startContainer && startContainer.type == CKEDITOR.NODE_TEXT )
+				{
+					if ( !startOffset )
+						walkerRange.setStartBefore( startContainer );
+					else if ( startOffset >= startContainer.getLength( ) )
+						walkerRange.setStartAfter( startContainer );
+					else
+					{
+						// Enlarge the range properly to avoid walker making
+						// DOM changes caused by triming the text nodes later.
+						walkerRange.setStartBefore( startContainer );
+						moveStart = 0;
+					}
+				}
+
+				if ( endContainer && endContainer.type == CKEDITOR.NODE_TEXT )
+				{
+					if ( !endOffset )
+						walkerRange.setEndBefore( endContainer );
+					else if ( endOffset >= endContainer.getLength( ) )
+						walkerRange.setEndAfter( endContainer );
+					else
+					{
+						walkerRange.setEndAfter( endContainer );
+						moveEnd = 0;
+					}
+				}
+
+				var walker = new CKEDITOR.dom.walker( walkerRange );
+
+				walker.evaluator = function( node )
+				{
+					return node.type == ( mode == CKEDITOR.SHRINK_ELEMENT ?
+						CKEDITOR.NODE_ELEMENT : CKEDITOR.NODE_TEXT );
+				};
+
+				var currentElement;
+				walker.guard = function( node, movingOut )
+				{
+					// Stop when we're shrink in element mode while encountering a text node.
+					if ( mode == CKEDITOR.SHRINK_ELEMENT && node.type == CKEDITOR.NODE_TEXT )
+						return false;
+
+					// Stop when we've already walked "through" an element.
+					if ( movingOut && node.equals( currentElement ) )
+						return false;
+
+					if ( !movingOut && node.type == CKEDITOR.NODE_ELEMENT )
+						currentElement = node;
+
+					return true;
+				};
+
+				if ( moveStart )
+				{
+					var textStart = walker[ mode == CKEDITOR.SHRINK_ELEMENT ? 'lastForward' : 'next']();
+					textStart && this.setStartBefore( textStart );
+				}
+
+				if ( moveEnd )
+				{
+					walker.reset();
+					var textEnd = walker[ mode == CKEDITOR.SHRINK_ELEMENT ? 'lastBackward' : 'previous']();
+					textEnd && this.setEndAfter( textEnd );
+				}
+
+				return !!( moveStart || moveEnd );
 			}
 		},
 
@@ -1617,6 +1717,10 @@ CKEDITOR.dom.range = function( document )
 		{
 			var isEditable;
 
+			// Empty elements are rejected.
+			if ( CKEDITOR.dtd.$empty[ el.getName() ] )
+				return false;
+
 			while ( el && el.type == CKEDITOR.NODE_ELEMENT )
 			{
 				isEditable = el.isEditable();
@@ -1727,3 +1831,6 @@ CKEDITOR.ENLARGE_LIST_ITEM_CONTENTS = 3;
 CKEDITOR.START = 1;
 CKEDITOR.END = 2;
 CKEDITOR.STARTEND = 3;
+
+CKEDITOR.SHRINK_ELEMENT = 1;
+CKEDITOR.SHRINK_TEXT = 2;

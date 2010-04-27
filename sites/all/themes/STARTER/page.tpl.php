@@ -75,7 +75,7 @@
     </div>
 
   <?php if ($left): ?>
-    <div id="sidebar-left" class="column sidebar region grid-4 <?php print ns('pull-12', $right, 3); ?>">
+    <div id="sidebar-left" class="column sidebar region grid-4 pull-8">
       <?php print $left; ?>
     </div>
   <?php endif; ?>

@@ -86,6 +86,43 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 		return retval;
 	}
 
+	function getFocusedCell( cellsToDelete ) {
+		var i = 0,
+			last = cellsToDelete.length - 1,
+			database = {},
+			cell,focusedCell,
+			tr;
+
+		while ( ( cell = cellsToDelete[ i++ ] ) )
+			CKEDITOR.dom.element.setMarker( database, cell, 'delete_cell', true );
+
+		// 1.first we check left or right side focusable cell row by row;
+		i = 0;
+		while ( ( cell = cellsToDelete[ i++ ] ) )
+		{
+			if ( ( focusedCell = cell.getPrevious() ) && !focusedCell.getCustomData( 'delete_cell' )
+			  || ( focusedCell = cell.getNext()     ) && !focusedCell.getCustomData( 'delete_cell' ) )
+			{
+				CKEDITOR.dom.element.clearAllMarkers( database );
+				return focusedCell;
+			}
+		}
+
+		CKEDITOR.dom.element.clearAllMarkers( database );
+
+		// 2. then we check the toppest row (outside the selection area square) focusable cell
+		tr = cellsToDelete[ 0 ].getParent();
+		if ( ( tr = tr.getPrevious() ) )
+			return tr.getLast();
+
+		// 3. last we check the lowerest  row focusable cell
+		tr = cellsToDelete[ last ].getParent();
+		if ( ( tr = tr.getNext() ) )
+			return tr.getChild( 0 );
+
+		return null;
+	}
+
 	function clearRow( $tr )
 	{
 		// Get the array of row's cells.
@@ -123,31 +160,56 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 	{
 		if ( selectionOrRow instanceof CKEDITOR.dom.selection )
 		{
-			var cells = getSelectedCells( selectionOrRow );
-			var rowsToDelete = [];
+			var cells = getSelectedCells( selectionOrRow ),
+				cellsCount = cells.length,
+				rowsToDelete = [],
+				cursorPosition,
+				previousRowIndex,
+				nextRowIndex;
 
 			// Queue up the rows - it's possible and likely that we have duplicates.
-			for ( var i = 0 ; i < cells.length ; i++ )
+			for ( var i = 0 ; i < cellsCount ; i++ )
 			{
-				var row = cells[ i ].getParent();
-				rowsToDelete[ row.$.rowIndex ] = row;
+				var row = cells[ i ].getParent(),
+						rowIndex = row.$.rowIndex;
+
+				!i && ( previousRowIndex = rowIndex - 1 );
+				rowsToDelete[ rowIndex ] = row;
+				i == cellsCount - 1 && ( nextRowIndex = rowIndex + 1 );
 			}
+
+			var table = row.getAscendant( 'table' ),
+					rows =  table.$.rows,
+					rowCount = rows.length;
+
+			// Where to put the cursor after rows been deleted?
+			// 1. Into next sibling row if any;
+			// 2. Into previous sibling row if any;
+			// 3. Into table's parent element if it's the very last row.
+			cursorPosition = new CKEDITOR.dom.element(
+				nextRowIndex < rowCount && table.$.rows[ nextRowIndex ] ||
+				previousRowIndex > 0 && table.$.rows[ previousRowIndex ] ||
+				table.$.parentNode );
 
 			for ( i = rowsToDelete.length ; i >= 0 ; i-- )
 			{
 				if ( rowsToDelete[ i ] )
 					deleteRows( rowsToDelete[ i ] );
 			}
+
+			return cursorPosition;
 		}
 		else if ( selectionOrRow instanceof CKEDITOR.dom.element )
 		{
-			var table = selectionOrRow.getAscendant( 'table' );
+			table = selectionOrRow.getAscendant( 'table' );
 
 			if ( table.$.rows.length == 1 )
 				table.remove();
 			else
 				selectionOrRow.remove();
 		}
+
+		return 0;
 	}
 
 	function insertColumn( selection, insertBefore )
@@ -252,13 +314,22 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 		if ( selectionOrCell instanceof CKEDITOR.dom.selection )
 		{
 			var cellsToDelete = getSelectedCells( selectionOrCell );
+			var table = cellsToDelete[ 0 ] && cellsToDelete[ 0 ].getAscendant( 'table' );
+			var cellToFocus   = getFocusedCell( cellsToDelete );
+
 			for ( var i = cellsToDelete.length - 1 ; i >= 0 ; i-- )
 				deleteCells( cellsToDelete[ i ] );
+
+			if ( cellToFocus )
+				placeCursorInCell( cellToFocus, true );
+			else if ( table )
+				table.remove();
 		}
 		else if ( selectionOrCell instanceof CKEDITOR.dom.element )
 		{
-			if ( selectionOrCell.getParent().getChildCount() == 1 )
-				selectionOrCell.getParent().remove();
+			var tr = selectionOrCell.getParent();
+			if ( tr.getChildCount() == 1 )
+				tr.remove();
 			else
 				selectionOrCell.remove();
 		}
@@ -331,14 +402,14 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 	function cellInRow( tableMap, rowIndex, cell )
 	{
 		var oRow = tableMap[ rowIndex ];
-		if( typeof cell == 'undefined' )
+		if ( typeof cell == 'undefined' )
 			return oRow;
 
 		for ( var c = 0 ; oRow && c < oRow.length ; c++ )
 		{
 			if ( cell.is && oRow[c] == cell.$ )
 				return c;
-			else if( c == cell )
+			else if ( c == cell )
 				return new CKEDITOR.dom.element( oRow[ c ] );
 		}
 		return cell.is ? -1 : null;
@@ -350,11 +421,11 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 		for ( var r = 0; r < tableMap.length; r++ )
 		{
 			var row = tableMap[ r ];
-			if( typeof cell == 'undefined' )
+			if ( typeof cell == 'undefined' )
 				oCol.push( row[ colIndex ] );
-			else if( cell.is && row[ colIndex ] == cell.$ )
+			else if ( cell.is && row[ colIndex ] == cell.$ )
 				return r;
-			else if( r == cell )
+			else if ( r == cell )
 				return new CKEDITOR.dom.element( row[ colIndex ] );
 		}
 
@@ -387,7 +458,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			startRow = firstCell.getParent().$.rowIndex,
 			startColumn = cellInRow( map, startRow, firstCell );
 
-		if( mergeDirection )
+		if ( mergeDirection )
 		{
 			var targetCell;
 			try
@@ -408,7 +479,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 
 			// 1. No cell could be merged.
 			// 2. Same cell actually.
-			if( !targetCell || firstCell.$ == targetCell  )
+			if ( !targetCell || firstCell.$ == targetCell  )
 				return false;
 
 			// Sort in map order regardless of the DOM sequence.
@@ -445,16 +516,16 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			if ( !isDetect )
 			{
 				// Trim all cell fillers and check to remove empty cells.
-				if( trimCell( cell ), cell.getChildren().count() )
+				if ( trimCell( cell ), cell.getChildren().count() )
 				{
 					// Merge vertically cells as two separated paragraphs.
-					if( rowIndex != lastRowIndex
+					if ( rowIndex != lastRowIndex
 						&& cellFirstChild
 						&& !( cellFirstChild.isBlockBoundary
 							  && cellFirstChild.isBlockBoundary( { br : 1 } ) ) )
 					{
 						var last = frag.getLast( CKEDITOR.dom.walker.whitespaces( true ) );
-						if( last && !( last.is && last.is( 'br' ) ) )
+						if ( last && !( last.is && last.is( 'br' ) ) )
 							frag.append( new CKEDITOR.dom.element( 'br' ) );
 					}
 
@@ -469,15 +540,15 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 		{
 			frag.moveChildren( firstCell );
 
-			if( !CKEDITOR.env.ie )
+			if ( !CKEDITOR.env.ie )
 				firstCell.appendBogus();
 
-			if( totalColSpan >= mapWidth )
+			if ( totalColSpan >= mapWidth )
 				firstCell.removeAttribute( 'rowSpan' );
 			else
 				firstCell.$.rowSpan = totalRowSpan;
 
-			if( totalRowSpan >= mapHeight )
+			if ( totalRowSpan >= mapHeight )
 				firstCell.removeAttribute( 'colSpan' );
 			else
 				firstCell.$.colSpan = totalColSpan;
@@ -489,7 +560,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			for ( i = count - 1; i >= 0; i-- )
 			{
 				var tailTr = trs.getItem( i );
-				if( !tailTr.$.cells.length )
+				if ( !tailTr.$.cells.length )
 				{
 					tailTr.remove();
 					count++;
@@ -508,9 +579,9 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 	function verticalSplitCell ( selection, isDetect )
 	{
 		var cells = getSelectedCells( selection );
-		if( cells.length > 1 )
+		if ( cells.length > 1 )
 			return false;
-		else if( isDetect )
+		else if ( isDetect )
 			return true;
 
 		var cell = cells[ 0 ],
@@ -525,7 +596,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			newCellRowSpan,
 			newRowIndex;
 
-		if( rowSpan > 1 )
+		if ( rowSpan > 1 )
 		{
 			newRowSpan = Math.ceil( rowSpan / 2 );
 			newCellRowSpan = Math.floor( rowSpan / 2 );
@@ -541,7 +612,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			{
 				candidateCell = newCellRow[ c ];
 				// Catch first cell actually following the column.
-				if( candidateCell.parentNode == newCellTr.$
+				if ( candidateCell.parentNode == newCellTr.$
 					&& c > colIndex )
 				{
 					newCell.insertBefore( new CKEDITOR.dom.element( candidateCell ) );
@@ -552,7 +623,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			}
 
 			// The destination row is empty, append at will.
-			if( !candidateCell )
+			if ( !candidateCell )
 				newCellTr.append( newCell, true );
 		}
 		else
@@ -568,14 +639,14 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 				cellsInSameRow[ i ].rowSpan++;
 		}
 
-		if( !CKEDITOR.env.ie )
+		if ( !CKEDITOR.env.ie )
 			newCell.appendBogus();
 
 		cell.$.rowSpan = newRowSpan;
 		newCell.$.rowSpan = newCellRowSpan;
-		if( newRowSpan == 1 )
+		if ( newRowSpan == 1 )
 			cell.removeAttribute( 'rowSpan' );
-		if( newCellRowSpan == 1 )
+		if ( newCellRowSpan == 1 )
 			newCell.removeAttribute( 'rowSpan' );
 
 		return newCell;
@@ -584,9 +655,9 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 	function horizontalSplitCell( selection, isDetect )
 	{
 		var cells = getSelectedCells( selection );
-		if( cells.length > 1 )
+		if ( cells.length > 1 )
 			return false;
-		else if( isDetect )
+		else if ( isDetect )
 			return true;
 
 		var cell = cells[ 0 ],
@@ -600,7 +671,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			newColSpan,
 			newCellColSpan;
 
-		if( colSpan > 1 )
+		if ( colSpan > 1 )
 		{
 			newColSpan = Math.ceil( colSpan / 2 );
 			newCellColSpan = Math.floor( colSpan / 2 );
@@ -614,14 +685,14 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 		}
 		newCell = cell.clone();
 		newCell.insertAfter( cell );
-		if( !CKEDITOR.env.ie )
+		if ( !CKEDITOR.env.ie )
 			newCell.appendBogus();
 
 		cell.$.colSpan = newColSpan;
 		newCell.$.colSpan = newCellColSpan;
-		if( newColSpan == 1 )
+		if ( newColSpan == 1 )
 			cell.removeAttribute( 'colSpan' );
-		if( newCellColSpan == 1 )
+		if ( newCellColSpan == 1 )
 			newCell.removeAttribute( 'colSpan' );
 
 		return newCell;
@@ -668,7 +739,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 					exec : function( editor )
 					{
 						var selection = editor.getSelection();
-						deleteRows( selection );
+						placeCursorInCell( deleteRows( selection ) );
 					}
 				} );
 

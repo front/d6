@@ -1,6 +1,18 @@
 Webform 2.x Changelog
 ---------------------
 
+2.x to 3.0
+----------
+- Module directory structure moved around.
+- Webform configuration moved to an entirely separate tab.
+- E-mail templates are now editable by administrators.
+- Conditional fields.
+- Webform may now be attached to any content type.
+- Form builder integration for live previews and editing of forms.
+- Public API for allowing other modules to provide components.
+- Public API for interacting with submission save, insert, update, and delete.
+- New rendering capabilities for HTML presentation of submissions and e-mails.
+
 1.x to 2.0
 ----------
 - Redirect POST option removed.
@@ -19,4 +31,4 @@ Webform 2.x Changelog
 - Component descriptions are textareas rather than textfields.
 - _webform_filtervalues() has been renamed to _webform_filter_values.
 
-$Id: CHANGELOG.txt,v 1.2.2.1 2008/04/02 04:05:12 quicksketch Exp $
+$Id: CHANGELOG.txt,v 1.8 2010/02/07 02:48:48 quicksketch Exp $

@@ -1,12 +1,18 @@
 <?php
-// $Id: imce.install,v 1.2.2.2 2008/04/17 23:38:24 ufku Exp $
+// $Id: imce.install,v 1.3 2010/03/17 20:55:38 ufku Exp $
+
+/**
+ * @file
+ * Installs, updates, and uninstalls IMCE.
+ */
 
 /**
  * Implementation of hook_install().
  */
 function imce_install() {
-  include_once './'. drupal_get_path('module', 'imce') .'/inc/core_profiles.inc';
+  module_load_include('inc', 'imce', 'inc/imce.core.profiles');
   imce_install_profiles();
+  drupal_set_message(t('!module has been installed.', array('!module' => l('IMCE', 'admin/settings/imce'))));
 }
 
 /**
@@ -16,8 +22,8 @@ function imce_uninstall() {
   variable_del('imce_profiles');
   variable_del('imce_roles_profiles');
   variable_del('imce_settings_textarea');
-  variable_del('imce_settings_absurl');
   variable_del('imce_settings_replace');
+  variable_del('imce_settings_thumb_method');
   variable_del('imce_custom_content');
   variable_del('imce_custom_process');
   variable_del('imce_custom_scan');
@@ -27,7 +33,8 @@ function imce_uninstall() {
  * Update from 5.x to 6.x.
  */
 function imce_update_6000() {
-  imce_install();
+  module_load_include('inc', 'imce', 'inc/imce.core.profiles');
+  imce_install_profiles();
   return array();
 }
 
@@ -40,5 +47,15 @@ function imce_update_6001() {
     $profiles[$id]['tuquota'] = 0;
   }
   variable_set('imce_profiles', $profiles);
+  return array();
+}
+
+
+/**
+ * Convert 6.x-1.x to 6.x-2.x
+ */
+function imce_update_6200() {
+  //delete deprecated variables
+  variable_del('imce_settings_absurls');
   return array();
 }

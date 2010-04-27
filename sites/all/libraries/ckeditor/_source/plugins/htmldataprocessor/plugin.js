@@ -16,7 +16,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 	{
 		var lastIndex = block.children.length,
 			last = block.children[ lastIndex - 1 ];
-		while(  last && last.type == CKEDITOR.NODE_TEXT && !CKEDITOR.tools.trim( last.value ) )
+		while (  last && last.type == CKEDITOR.NODE_TEXT && !CKEDITOR.tools.trim( last.value ) )
 			last = block.children[ --lastIndex ];
 		return last;
 	}
@@ -41,7 +41,12 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 	function blockNeedsExtension( block )
 	{
 		var lastChild = lastNoneSpaceChild( block );
-		return !lastChild || lastChild.type == CKEDITOR.NODE_ELEMENT && lastChild.name == 'br';
+
+		return !lastChild
+			|| lastChild.type == CKEDITOR.NODE_ELEMENT && lastChild.name == 'br'
+			// Some of the controls in form needs extension too,
+			// to move cursor at the end of the form. (#4791)
+			|| block.name == 'form' && lastChild.name == 'input';
 	}
 
 	function extendBlockForDisplay( block )
@@ -185,6 +190,11 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 
 					if ( !element.attributes.type )
 						element.attributes.type = 'text/css';
+				},
+
+				title : function( element )
+				{
+					element.children[ 0 ].value = element.attributes[ '_cke_title' ];
 				}
 			},
 

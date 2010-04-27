@@ -36,6 +36,7 @@ CKEDITOR.plugins.add( 'pagebreak',
 				'border-top: #999999 1px dotted;' +
 				'border-bottom: #999999 1px dotted;' +
 				'height: 5px;' +
+				'page-break-after: always;' +
 
 			'}' );
 	},
@@ -92,6 +93,11 @@ CKEDITOR.plugins.pagebreakCmd =
 
 			range.splitBlock( 'p' );
 			range.insertNode( breakObject );
+			if ( i == ranges.length - 1 )
+			{
+				range.moveToPosition( breakObject, CKEDITOR.POSITION_AFTER_END );
+				range.select();
+			}
 		}
 	}
 };
