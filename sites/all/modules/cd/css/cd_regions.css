@@ -1,0 +1,52 @@
+/* $Id: cd_regions.css,v 1.1.2.1 2010/03/19 20:59:39 swentel Exp $ */
+
+.cd-region-header {
+  clear: both;
+}
+
+.cd-region-left {
+  clear: left;
+  float: left;
+}
+
+.cd-region-middle {
+  clear: none;
+}
+
+.cd-region-right {
+  float: right;
+}
+
+.cd-region-footer {
+  clear: both;
+}
+
+/* default region dimensions */
+
+.cd-region-left {
+  width: 25%;
+}
+
+.cd-region-right {
+  width: 25%;
+}
+
+/* middle region */
+
+.cd-no-sidebars {
+}
+
+.cd-sidebar-left {
+  margin-left: 25%;
+  overflow: hidden;
+}
+
+.cd-sidebar-right {
+  margin-right: 25%;
+  overflow: hidden;  
+}
+
+.cd-two-sidebars {
+  margin-left: 25%;
+  margin-right: 25%;
+}

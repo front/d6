@@ -1,0 +1,52 @@
+/* $Id: ud_regions.css,v 1.1.2.1 2010/03/30 10:00:58 swentel Exp $ */
+
+.ud-region-header {
+  clear: both;
+}
+
+.ud-region-left {
+  clear: left;
+  float: left;
+}
+
+.ud-region-middle {
+  clear: none;
+}
+
+.ud-region-right {
+  float: right;
+}
+
+.ud-region-footer {
+  clear: both;
+}
+
+/* default region dimensions */
+
+.ud-region-left {
+  width: 25%;
+}
+
+.ud-region-right {
+  width: 25%;
+}
+
+/* middle region */
+
+.ud-no-sidebars {
+}
+
+.ud-sidebar-left {
+  margin-left: 25%;
+  overflow: hidden;
+}
+
+.ud-sidebar-right {
+  margin-right: 25%;
+  overflow: hidden;
+}
+
+.ud-two-sidebars {
+  margin-left: 25%;
+  margin-right: 25%;
+}

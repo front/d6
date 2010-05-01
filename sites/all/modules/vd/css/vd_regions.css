@@ -1,0 +1,52 @@
+/* $Id: vd_regions.css,v 1.1.2.2 2010/03/15 19:07:58 swentel Exp $ */
+
+.vd-region-header {
+  clear: both;
+}
+
+.vd-region-left {
+  clear: left;
+  float: left;
+}
+
+.vd-region-middle {
+  clear: none;
+}
+
+.vd-region-right {
+  float: right;
+}
+
+.vd-region-footer {
+  clear: both;
+}
+
+/* default region dimensions */
+
+.vd-region-left {
+  width: 25%;
+}
+
+.vd-region-right {
+  width: 25%;
+}
+
+/* middle region */
+
+.vd-no-sidebars {
+}
+
+.vd-sidebar-left {
+  margin-left: 25%;
+  overflow: hidden;
+}
+
+.vd-sidebar-right {
+  margin-right: 25%;
+  overflow: hidden;  
+}
+
+.vd-two-sidebars {
+  margin-left: 25%;
+  margin-right: 25%;
+}

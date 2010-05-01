@@ -1,0 +1,13 @@
+sites/default/settings.php
+sites/default/files
+__MACOSX
+.DS_Store
+CVS
+backup
+cache
+._*
+/error_log
+.bzrignore
+.project
+.settings
+.buildpath
