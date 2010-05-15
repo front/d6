@@ -1,19 +1,23 @@
-/* $Id: ud_regions.css,v 1.1.2.1 2010/03/30 10:00:58 swentel Exp $ */
+/* $Id: ud_regions.css,v 1.1.2.2 2010/04/19 12:22:40 swentel Exp $ */
 
 .ud-region-header {
   clear: both;
 }
 
 .ud-region-left {
-  clear: left;
+  display: inline;
   float: left;
 }
 
-.ud-region-middle {
-  clear: none;
+.ud-region-middle-wrapper {
+  display: inline;
+  float: left;
+  width: 100%;
+  margin-right: -100%;
 }
 
 .ud-region-right {
+  display: inline;
   float: right;
 }
 
@@ -33,20 +37,18 @@
 
 /* middle region */
 
-.ud-no-sidebars {
+.ud-no-sidebars .ud-region-middle {
 }
 
-.ud-sidebar-left {
+.ud-sidebar-left .ud-region-middle {
   margin-left: 25%;
-  overflow: hidden;
 }
 
-.ud-sidebar-right {
+.ud-sidebar-right .ud-region-middle {
   margin-right: 25%;
-  overflow: hidden;
 }
 
-.ud-two-sidebars {
+.ud-two-sidebars .ud-region-middle {
   margin-left: 25%;
   margin-right: 25%;
 }

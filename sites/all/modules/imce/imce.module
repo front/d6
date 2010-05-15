@@ -1,5 +1,5 @@
 <?php
-// $Id: imce.module,v 1.24.2.2 2010/03/18 00:47:35 ufku Exp $
+// $Id: imce.module,v 1.24.2.1 2010/03/17 22:08:30 ufku Exp $
 
 /**
  * @file
@@ -77,9 +77,6 @@ function imce_theme() {
  */
 function imce_file_download($file) {
   if ($path = file_create_path($file)) {
-    if (!file_exists($path)) {
-      return;
-    }
     if ($result = db_result(db_query("SELECT filemime FROM {files} WHERE filepath = '%s'", $path))) {
       $type = $result;
     }

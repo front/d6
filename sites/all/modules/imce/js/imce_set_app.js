@@ -1,4 +1,4 @@
-// $Id: imce_set_app.js,v 1.4.2.1 2010/04/03 16:06:29 ufku Exp $
+// $Id: imce_set_app.js,v 1.4 2010/03/17 20:55:38 ufku Exp $
 /*
  * IMCE Integration by URL
  * Ex-1: http://example.com/imce?app=XEditor|url@urlFieldId|width@widthFieldId|height@heightFieldId
@@ -55,7 +55,9 @@ imce.hooks.load.push(function(win) {
     imce.highlight(filename.substr(filename.lastIndexOf('/')+1));
   }
   //set send to
-  sendtoFunc && imce.setSendTo(Drupal.t('Insert file'), sendtoFunc);
+  if (sendtoFunc) {
+    imce.setSendTo(Drupal.t('Send to @app', {'@app': appName}), sendtoFunc);
+  }
 });
 
 //sendTo function

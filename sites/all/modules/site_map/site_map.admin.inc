@@ -1,5 +1,5 @@
 <?php
-// $Id: site_map.admin.inc,v 1.1.2.7.2.3 2010/04/04 18:08:48 frjo Exp $
+// $Id: site_map.admin.inc,v 1.1.2.7.2.4 2010/05/07 11:16:29 frjo Exp $
 
 /**
  * @file
@@ -71,7 +71,7 @@ function site_map_admin_settings() {
   $form['site_map_content']['site_map_show_faq'] = array(
     '#type' => 'checkbox',
     '#title' => t('Show FAQ content'),
-    '#default_value' => variable_get('site_map_show_faq', 1),
+    '#default_value' => variable_get('site_map_show_faq', 0),
     '#description' => t('When enabled, this option will include the content from the FAQ module in the site map.'),
   );
   $vocab_options = array();

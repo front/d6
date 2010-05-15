@@ -1,5 +1,5 @@
 <?php
-// $Id: custom_search.install,v 1.1.2.3 2010/03/28 14:51:45 jdanthinne Exp $
+// $Id: custom_search.install,v 1.1.2.5 2010/04/29 21:12:09 jdanthinne Exp $
 
 /**
  * @file
@@ -11,14 +11,14 @@
  */
 function custom_search_install() {
   db_query("UPDATE {system} SET weight = 100 WHERE name = 'custom_search'");
-  drupal_set_message(st('Custom Search enabled. Don\'t forget to <a href="!basepath/admin/user/permissions#module-custom_search">set permissions</a>.', array('!basepath', base_path())));
+  drupal_set_message(st('Custom Search enabled. Don\'t forget to <a href="@link">set permissions</a>.', array('@link' => url('admin/user/permissions#module-custom_search'))));
 }
 
 /**
  * Implementation of hook_enable().
  */
 function custom_search_enable() {
-  drupal_set_message(t('Custom Search enabled. Don\'t forget to <a href="!basepath/admin/user/permissions#module-custom_search">set permissions</a>.', array('!basepath', base_path())));
+  drupal_set_message(t('Custom Search enabled. Don\'t forget to <a href="@link">set permissions</a>.', array('@link' => url('admin/user/permissions#module-custom_search'))));
 }
 
 /**
@@ -27,6 +27,12 @@ function custom_search_enable() {
 function custom_search_update_6100() {
   $ret = array();
   $ret[] = update_sql("UPDATE {system} SET weight = 100 WHERE name = 'custom_search'");
+  return $ret;
+}
+
+function custom_search_update_6101() {
+  $ret = array();
+  drupal_set_message(t('Custom Search has been divided in multiple modules. Please re-enable the sub-modules you need.'));
   return $ret;
 }
 

@@ -1,19 +1,23 @@
-/* $Id: cd_regions.css,v 1.1.2.1 2010/03/19 20:59:39 swentel Exp $ */
+/* $Id: cd_regions.css,v 1.1.2.2 2010/04/19 12:22:29 swentel Exp $ */
 
 .cd-region-header {
   clear: both;
 }
 
 .cd-region-left {
-  clear: left;
+  display: inline;
   float: left;
 }
 
-.cd-region-middle {
-  clear: none;
+.cd-region-middle-wrapper {
+  display: inline;
+  float: left;
+  width: 100%;
+  margin-right: -100%;
 }
 
 .cd-region-right {
+  display: inline;
   float: right;
 }
 
@@ -33,20 +37,18 @@
 
 /* middle region */
 
-.cd-no-sidebars {
+.cd-no-sidebars .cd-region-middle {
 }
 
-.cd-sidebar-left {
+.cd-sidebar-left .cd-region-middle {
   margin-left: 25%;
-  overflow: hidden;
 }
 
-.cd-sidebar-right {
+.cd-sidebar-right .cd-region-middle {
   margin-right: 25%;
-  overflow: hidden;  
 }
 
-.cd-two-sidebars {
+.cd-two-sidebars .cd-region-middle {
   margin-left: 25%;
   margin-right: 25%;
 }

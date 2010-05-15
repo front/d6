@@ -1,5 +1,5 @@
 <?php
-// $Id: ud.module,v 1.1.2.27 2010/03/31 09:20:22 swentel Exp $
+// $Id: ud.module,v 1.1.2.28 2010/04/27 19:05:24 swentel Exp $
 
 /**
  * @file
@@ -277,7 +277,7 @@ function ud_field_formatter_info() {
   $formatters = array();
 
   if (module_exists('userreference')) {
-    $build_modes = ds_get_build_modes('ud');
+    $build_modes = ds_get_build_modes('ud', TRUE);
     foreach ($build_modes as $key => $build_mode) {
       $formatters['user_'. $key] = array(
         'label' => t('Build mode: @build_mode', array('@build_mode' => $build_mode['title'])),

@@ -1,5 +1,5 @@
 <?php
-// $Id: vd.module,v 1.1.2.9 2010/02/27 13:33:55 swentel Exp $
+// $Id: vd.module,v 1.1.2.13 2010/04/26 13:39:20 swentel Exp $
 
 /**
  * @file
@@ -21,10 +21,10 @@ function vd_ds_api() {
 
   $help = array(
     t('<h3>Views displays</h3>
-      <p>This module comes with a vd.tpl.php, available in the templates folder, which is optimized for use with Views Displays. You can copy the file to your themes folder to use your own version if you want.</p>
-      <p>All views are disabled by default to make sure the layout overview page isn\'t flooded with views. You can enable them on the <a href="!url">build modes</a> page. Use the "toggle" checkbox so the view display is ignored. Note that "default" and "feed" displays are ignored.</p>
+      <p>This module comes with a vd.tpl.php, available in the templates folder, which is optimized for use with Views Displays. You can copy the file to your themes folder to use your own version if you want. Copying the file to your theme folder will only work if views-view.tpl.php is in the theme folder, so you could also copy the code into views-view.tpl.php if you don\'t want to have those 2 files in the directory.</p>
+      <p>All views are disabled by default to make sure the layout overview page isn\'t flooded with views. You can enable them on the !url page. Use the "toggle" checkbox so the view display is ignored. Note that "default" and "feed" displays are ignored.</p>
       <p>If you enabled the <a href="http://drupal.org/project/views_attach">views attach</a> module, those views will be made available as fields on node types (user attachments is not supported yet). These views are excluded also from views displays.</p>
-    ', array('!url', l('buildmodes', 'admin/ds/vd/buildmodes'))),
+    ', array('!url' => l('buildmodes', 'admin/ds/vd/buildmodes'))),
   );
 
   return array(
@@ -34,6 +34,7 @@ function vd_ds_api() {
     'views_base' => 'views',
     'types' => 'vd_get_types',
     'no_new_build_modes' => TRUE,
+    'no_fields_examples' => TRUE,
     'help' => $help,
   );
 }
@@ -206,6 +207,8 @@ function vd_preprocess_views_view(&$vars) {
 
   // Good to go.
   $view = $vars['view'];
+  $vars['view']->build_mode = 'full';
+  $vars['view']->type = $view_object->type;
   $view_object->build_mode = 'full';
   $view_object->view = $view;
 

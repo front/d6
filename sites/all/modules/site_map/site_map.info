@@ -2,9 +2,9 @@
 name = Site map
 description = Display a site map.
 core = 6.x
-; Information added by drupal.org packaging script on 2010-04-05
+; Information added by drupal.org packaging script on 2010-05-07
 version = "6.x-2.x-dev"
 core = "6.x"
 project = "site_map"
-datestamp = "1270426485"
+datestamp = "1273234494"
 
