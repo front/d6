@@ -1,5 +1,5 @@
 <?php
-// $Id: custom_search_taxonomy.module,v 1.1.2.5 2010/05/04 17:04:48 jdanthinne Exp $
+// $Id: custom_search_taxonomy.module,v 1.1.2.6 2010/05/31 13:54:05 jdanthinne Exp $
 
 /**
  * @file
@@ -34,18 +34,11 @@ function custom_search_taxonomy_form_alter(&$form, $form_state, $form_id) {
       case 'search_form':
 
         // Apply Custom Search settings to the advanced search form.
-        if (variable_get('custom_search_results_advanced_override', FALSE)) {
-          $vocabularies = taxonomy_get_vocabularies();
-          $needed = FALSE;
-          foreach ($vocabularies as $voc) {
-            if (variable_get('custom_search_voc' . $voc->vid . '_selector', 'disabled') != 'disabled') $needed = TRUE;
-          }
-          if ($needed) {
-            foreach ($vocabularies as $voc) {
-              if (variable_get('custom_search_voc' . $voc->vid . '_selector', 'disabled') == 'disabled') unset($form['advanced']['category']['#options'][$voc->name]);
-            }
-          }
+        $vocabularies = taxonomy_get_vocabularies();
+        foreach ($vocabularies as $voc) {
+          if (!variable_get('custom_search_advanced_voc' . $voc->vid . '_display', TRUE)) unset($form['advanced']['category']['#options'][$voc->name]);
         }
+        if (!count($form['advanced']['category']['#options'])) unset($form['advanced']['category']);
 
       break;
 
@@ -168,6 +161,24 @@ function custom_search_taxonomy_form_alter(&$form, $form_state, $form_id) {
             '#weight' => variable_get('custom_search_taxonomy' . $voc->vid . '_weight', $w),
           );
           $w++;
+        }
+      break;
+
+      case 'custom_search_results_admin':
+        $form['search_form']['advanced']['taxonomy'] = array(
+          '#type'         => 'fieldset',
+          '#title'        => t('Taxonomy'),
+          '#description'  => t('Select the vocabularies to display on the advanced search form.'),
+          '#collapsible'  => TRUE,
+          '#collapsed'    => TRUE,
+        );
+        $vocabularies = taxonomy_get_vocabularies();
+        foreach ($vocabularies as $voc) {
+          $form['search_form']['advanced']['taxonomy']['custom_search_advanced_voc' . $voc->vid . '_display'] = array(
+            '#type'           => 'checkbox',
+            '#title'          => $voc->name,
+            '#default_value'  => variable_get('custom_search_advanced_voc' . $voc->vid . '_display', TRUE),
+          );
         }
       break;
 

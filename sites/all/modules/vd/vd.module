@@ -1,5 +1,5 @@
 <?php
-// $Id: vd.module,v 1.1.2.13 2010/04/26 13:39:20 swentel Exp $
+// $Id: vd.module,v 1.1.2.18 2010/06/28 17:35:28 swentel Exp $
 
 /**
  * @file
@@ -21,10 +21,10 @@ function vd_ds_api() {
 
   $help = array(
     t('<h3>Views displays</h3>
-      <p>This module comes with a vd.tpl.php, available in the templates folder, which is optimized for use with Views Displays. You can copy the file to your themes folder to use your own version if you want. Copying the file to your theme folder will only work if views-view.tpl.php is in the theme folder, so you could also copy the code into views-view.tpl.php if you don\'t want to have those 2 files in the directory.</p>
-      <p>All views are disabled by default to make sure the layout overview page isn\'t flooded with views. You can enable them on the !url page. Use the "toggle" checkbox so the view display is ignored. Note that "default" and "feed" displays are ignored.</p>
+      <p>This module comes with a vd.tpl.php, available in the templates folder, which is optimized for use with Views Displays. You can copy the file to your themes folder to use your own version if you want. Copying the file to your theme folder will only work if views-view.tpl.php is in the theme folder.</p>
+      <p>All views are disabled by default to make sure the layout overview page isn\'t flooded with views. You can enable them on the !url page. Use the "toggle" checkbox so the view display is ignored. Note that "default" and "feed" displays are ignored. If you experience problems with checkboxes not being able to be unchecked in the matrix mode, remove entries from the variable table which begin with \'vd_type_\' and all should work out fine after that.</p>
       <p>If you enabled the <a href="http://drupal.org/project/views_attach">views attach</a> module, those views will be made available as fields on node types (user attachments is not supported yet). These views are excluded also from views displays.</p>
-    ', array('!url' => l('buildmodes', 'admin/ds/vd/buildmodes'))),
+    ', array('!url' => l('buildmodes', 'admin/build/ds/vd/buildmodes'))),
   );
 
   return array(
@@ -34,7 +34,6 @@ function vd_ds_api() {
     'views_base' => 'views',
     'types' => 'vd_get_types',
     'no_new_build_modes' => TRUE,
-    'no_fields_examples' => TRUE,
     'help' => $help,
   );
 }
@@ -47,6 +46,24 @@ function vd_init() {
 }
 
 /**
+ * Implementation of hook_theme().
+ */
+function vd_theme() {
+  $theme_functions = array();
+
+  // Single theming functions.
+  $formatters = array('vd_title_h1', 'vd_title_h2', 'vd_title_h2_block', 'vd_title_p');
+
+  foreach ($formatters as $formatter) {
+    $theme_functions[$formatter] = array(
+      'arguments' => array('view' => NULL),
+    );
+  }
+
+  return $theme_functions;
+}
+
+/**
  * Return all views.
  */
 function vd_get_types() {
@@ -54,6 +71,7 @@ function vd_get_types() {
   $types = array();
 
   $views = views_get_all_views();
+
   foreach ($views as $view) {
     if (!empty($view->disabled)) {
       continue;
@@ -120,6 +138,19 @@ function vd_ds_fields($type_name, $build_mode, $extra) {
       'properties' => array(
         'css-class' => 'views-admin-links views-hide',
       ),
+    ),
+    'title' => array(
+      'title' => t('Views title'),
+      'type' => DS_FIELD_TYPE_THEME,
+      'status' => DS_FIELD_STATUS_STATIC,
+      'properties' => array(
+        'formatters' => array(
+          'vd_title_h1' => t('H1 title'),
+          'vd_title_h2' => t('H2 title'),
+          'vd_title_h2_block' => t('H2 block title'),
+          'vd_title_p' => t('Paragraph title'),
+        ),
+      )
     ),
     'header' => array(
       'title' => t('Views header'),
@@ -230,4 +261,27 @@ function vd_preprocess_views_view(&$vars) {
   $vars['template_files'][] = 'vd';
   $vars['regions'] = $view_object->regions;
   $vars['views_content'] = ds_render_content($view_object, 'vd', $vars);
+}
+
+/**
+ * VD theming functions.
+ */
+function theme_vd_title_h1($field) {
+  $title = $field['object']->view->display[$field['object']->view->current_display]->handler->options['title'];
+  return '<h1>'. check_plain($title) .'</h1>';
+}
+
+function theme_vd_title_h2($field) {
+  $title = $field['object']->view->display[$field['object']->view->current_display]->handler->options['title'];
+  return '<h2>'. check_plain($title) .'</h2>';
+}
+
+function theme_vd_title_h2_block($field) {
+  $title = $field['object']->view->display[$field['object']->view->current_display]->handler->options['title'];
+  return '<h2 class="block-title">'. check_plain($title) .'</h2>';
+}
+
+function theme_vd_title_p($field) {
+  $title = $field['object']->view->display[$field['object']->view->current_display]->handler->options['title'];
+  return '<p>'. check_plain($title) .'</p>';
 }

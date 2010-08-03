@@ -1,4 +1,4 @@
-// $Id: custom_search.js,v 1.1.2.6 2010/05/01 16:09:07 jdanthinne Exp $
+// $Id: custom_search.js,v 1.1.2.7 2010/05/25 13:42:12 jdanthinne Exp $
 
 Drupal.behaviors.custom_search = function (context) {
 
@@ -11,8 +11,10 @@ Drupal.behaviors.custom_search = function (context) {
         return false;
       }
       // If basic search is hidden, copy or value to the keys
-      $(this).find('#edit-keys').val($(this).find('#edit-or').val());
-      $(this).find('#edit-or').val('');
+      if ($(this).find('#edit-keys').parents('div.element-invisible').attr('class') == 'element-invisible') {
+        $(this).find('#edit-keys').val($(this).find('#edit-or').val());
+        $(this).find('#edit-or').val('');
+      }
       return true;
     }
   );

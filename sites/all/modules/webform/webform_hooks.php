@@ -1,5 +1,5 @@
 <?php
-// $Id: webform_hooks.php,v 1.9.2.4 2010/04/10 00:19:15 quicksketch Exp $
+// $Id: webform_hooks.php,v 1.9.2.5 2010/06/18 04:14:28 quicksketch Exp $
 
 /**
  * @file
@@ -110,6 +110,30 @@ function hook_webform_submission_update($node, $submission) {
 function hook_webform_submission_delete($node, $submission) {
   // Delete a record from a 3rd-party module table when a submission is deleted.
   db_query("DELETE FROM {mymodule_table} WHERE nid = %d, sid = %d", $node->nid, $submission->sid);
+}
+
+/**
+ * Alter the display of a Webform submission.
+ *
+ * This function applies to both e-mails sent by Webform and normal display of
+ * submissions when viewing through the adminsitrative interface.
+ *
+ * @param $renderable
+ *   The Webform submission in a renderable array, similar to FormAPI's
+ *   structure. This variable must be passed in by-reference. Important
+ *   properties of this array include #node, #submission, #email, and #format,
+ *   which can be used to find the context of the submission that is being
+ *   rendered.
+ */
+function hook_webform_submission_render_alter(&$renderable) {
+  // Remove page breaks from sent e-mails.
+  if (isset($renderable['#email'])) {
+    foreach (element_children($renderable) as $key) {
+      if ($renderable[$key]['#component']['type'] == 'pagebreak') {
+        unset($renderable[$key]);
+      }
+    }
+  }
 }
 
 /**

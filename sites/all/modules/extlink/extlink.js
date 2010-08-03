@@ -1,4 +1,4 @@
-// $Id: extlink.js,v 1.4.2.11 2010/05/07 21:48:29 quicksketch Exp $
+// $Id: extlink.js,v 1.4.2.12 2010/05/26 01:25:56 quicksketch Exp $
 (function ($) {
 
 function extlinkAttach(context) {
@@ -92,7 +92,7 @@ function extlinkAttach(context) {
   }
 
   // Work around for Internet Explorer box model problems.
-  if (($.support && !$.support.boxModel) || ($.browser.msie && parseInt($.browser.version) <= 7)) {
+  if (($.support && !($.support.boxModel === undefined) && !$.support.boxModel) || ($.browser.msie && parseInt($.browser.version) <= 7)) {
     $('span.ext, span.mailto').css('display', 'inline-block');
   }
 }

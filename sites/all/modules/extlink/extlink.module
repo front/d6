@@ -1,5 +1,5 @@
 <?php
-// $Id: extlink.module,v 1.3.2.7 2010/05/07 21:06:36 quicksketch Exp $
+// $Id: extlink.module,v 1.3.2.8 2010/05/26 01:23:47 quicksketch Exp $
 
 function extlink_menu() {
   $items = array();
@@ -94,6 +94,7 @@ function extlink_admin_settings() {
     '#title' => t('Pop-up warning text'),
     '#default_value' => $extlink_alert_text,
     '#description' => t('Text to display in the pop-up external link warning box.'),
+    '#wysiwyg' => FALSE,
   );
 
   $patterns = array(

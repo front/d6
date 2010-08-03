@@ -1,5 +1,5 @@
 <?php
-// $Id: form.inc,v 1.265.2.32 2010/03/01 09:24:22 goba Exp $
+// $Id: form.inc,v 1.265.2.33 2010/05/19 15:02:32 goba Exp $
 
 /**
  * @defgroup forms Form builder functions
@@ -100,7 +100,7 @@ function drupal_get_form($form_id) {
       array_unshift($args_temp, $form_id);
 
       $form = call_user_func_array('drupal_retrieve_form', $args_temp);
-      $form_build_id = 'form-'. md5(uniqid(mt_rand(), true));
+      $form_build_id = 'form-'. md5(uniqid(mt_rand(), TRUE));
       $form['#build_id'] = $form_build_id;
       drupal_prepare_form($form_id, $form, $form_state);
       // Store a copy of the unprocessed form for caching and indicate that it
@@ -195,7 +195,7 @@ function drupal_rebuild_form($form_id, &$form_state, $args, $form_build_id = NUL
 
   if (!isset($form_build_id)) {
     // We need a new build_id for the new version of the form.
-    $form_build_id = 'form-'. md5(mt_rand());
+    $form_build_id = 'form-'. md5(uniqid(mt_rand(), TRUE));
   }
   $form['#build_id'] = $form_build_id;
   drupal_prepare_form($form_id, $form, $form_state);
@@ -1987,7 +1987,7 @@ function theme_image_button($element) {
     (!empty($element['#value']) ? ('value="'. check_plain($element['#value']) .'" ') : '') .
     'id="'. $element['#id'] .'" '.
     drupal_attributes($element['#attributes']) .
-    ' src="'. base_path() . $element['#src'] .'" '.
+    ' src="'. file_create_url($element['#src']) .'" '.
     (!empty($element['#title']) ? 'alt="'. check_plain($element['#title']) .'" title="'. check_plain($element['#title']) .'" ' : '' ) .
     "/>\n";
 }

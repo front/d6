@@ -1,5 +1,5 @@
 <?php
-// $Id: file.inc,v 1.121.2.11 2010/03/01 09:51:16 goba Exp $
+// $Id: file.inc,v 1.121.2.12 2010/05/11 09:49:58 goba Exp $
 
 /**
  * @file
@@ -35,19 +35,57 @@ define('FILE_STATUS_PERMANENT', 1);
 /**
  * Create the download path to a file.
  *
- * @param $path A string containing the path of the file to generate URL for.
- * @return A string containing a URL that can be used to download the file.
+ * There are two kinds of local files:
+ * - "created files", i.e. those in the files directory (which is stored in
+ *   the file_directory_path variable and can be retrieved using
+ *   file_directory_path()). These are files that have either been uploaded by
+ *   users or were generated automatically (for example through CSS
+ *   aggregation).
+ * - "shipped files", i.e. those outside of the files directory, which ship as
+ *   part of Drupal core or contributed modules or themes.
+ *
+ * @param $path
+ *   A string containing the Drupal path (i.e. path relative to the Drupal
+ *   root directory) of the file to generate the URL for.
+ * @return
+ *   A string containing a URL that can be used to download the file.
  */
 function file_create_url($path) {
-  // Strip file_directory_path from $path. We only include relative paths in urls.
-  if (strpos($path, file_directory_path() .'/') === 0) {
-    $path = trim(substr($path, strlen(file_directory_path())), '\\/');
+  // Clean up Windows paths.
+  $old_path = $path = str_replace('\\', '/', $path);
+
+  drupal_alter('file_url', $path);
+
+  // If any module has altered the path, then return the alteration.
+  if ($path != $old_path) {
+    return $path;
   }
-  switch (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC)) {
-    case FILE_DOWNLOADS_PUBLIC:
-      return $GLOBALS['base_url'] .'/'. file_directory_path() .'/'. str_replace('\\', '/', $path);
-    case FILE_DOWNLOADS_PRIVATE:
-      return url('system/files/'. $path, array('absolute' => TRUE));
+
+  // Otherwise serve the file from Drupal's web server. This point will only
+  // be reached when either no custom_file_url_rewrite() function has been
+  // defined, or when that function returned FALSE, thereby indicating that it
+  // cannot (or doesn't wish to) rewrite the URL. This is typically because
+  // the file doesn't match some conditions to be served from a CDN or static
+  // file server, or because the file has not yet been synced to the CDN or
+  // static file server.
+
+  // Shipped files.
+  if (strpos($path, file_directory_path() . '/') !== 0) {
+    return base_path() . $path;
+  }
+  // Created files.
+  else {
+    switch (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC)) {
+      case FILE_DOWNLOADS_PUBLIC:
+        return $GLOBALS['base_url'] . '/' . $path;
+      case FILE_DOWNLOADS_PRIVATE:
+        // Strip file_directory_path from $path. Private downloads' URLs are
+        // rewritten to be served relatively to system/files (which is a menu
+        // callback that streams the file) instead of relatively to the file
+        // directory path.
+        $path = file_directory_strip($path);
+        return url('system/files/' . $path, array('absolute' => TRUE));
+    }
   }
 }
 
@@ -195,23 +233,31 @@ function file_check_location($source, $directory = '') {
 }
 
 /**
- * Copies a file to a new location. This is a powerful function that in many ways
- * performs like an advanced version of copy().
+ * Copies a file to a new location.
+ *
+ * This is a powerful function that in many ways performs like an advanced
+ * version of copy().
  * - Checks if $source and $dest are valid and readable/writable.
  * - Performs a file copy if $source is not equal to $dest.
  * - If file already exists in $dest either the call will error out, replace the
  *   file or rename the file based on the $replace parameter.
  *
- * @param $source A string specifying the file location of the original file.
- *   This parameter will contain the resulting destination filename in case of
+ * @param $source
+ *   Either a string specifying the file location of the original file or an
+ *   object containing a 'filepath' property. This parameter is passed by
+ *   reference and will contain the resulting destination filename in case of
  *   success.
- * @param $dest A string containing the directory $source should be copied to.
- *   If this value is omitted, Drupal's 'files' directory will be used.
- * @param $replace Replace behavior when the destination file already exists.
- *   - FILE_EXISTS_REPLACE - Replace the existing file
- *   - FILE_EXISTS_RENAME - Append _{incrementing number} until the filename is unique
- *   - FILE_EXISTS_ERROR - Do nothing and return FALSE.
- * @return True for success, FALSE for failure.
+ * @param $dest
+ *   A string containing the directory $source should be copied to. If this
+ *   value is omitted, Drupal's 'files' directory will be used.
+ * @param $replace
+ *   Replace behavior when the destination file already exists.
+ *   - FILE_EXISTS_REPLACE: Replace the existing file.
+ *   - FILE_EXISTS_RENAME: Append _{incrementing number} until the filename is
+ *     unique.
+ *   - FILE_EXISTS_ERROR: Do nothing and return FALSE.
+ * @return
+ *   TRUE for success, FALSE for failure.
  */
 function file_copy(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
   $dest = file_create_path($dest);
@@ -311,21 +357,28 @@ function file_destination($destination, $replace) {
 
 /**
  * Moves a file to a new location.
+ *
  * - Checks if $source and $dest are valid and readable/writable.
  * - Performs a file move if $source is not equal to $dest.
  * - If file already exists in $dest either the call will error out, replace the
  *   file or rename the file based on the $replace parameter.
  *
- * @param $source A string specifying the file location of the original file.
- *   This parameter will contain the resulting destination filename in case of
+ * @param $source
+ *   Either a string specifying the file location of the original file or an
+ *   object containing a 'filepath' property. This parameter is passed by
+ *   reference and will contain the resulting destination filename in case of
  *   success.
- * @param $dest A string containing the directory $source should be copied to.
- *   If this value is omitted, Drupal's 'files' directory will be used.
- * @param $replace Replace behavior when the destination file already exists.
- *   - FILE_EXISTS_REPLACE - Replace the existing file
- *   - FILE_EXISTS_RENAME - Append _{incrementing number} until the filename is unique
- *   - FILE_EXISTS_ERROR - Do nothing and return FALSE.
- * @return True for success, FALSE for failure.
+ * @param $dest
+ *   A string containing the directory $source should be copied to. If this
+ *   value is omitted, Drupal's 'files' directory will be used.
+ * @param $replace
+ *   Replace behavior when the destination file already exists.
+ *   - FILE_EXISTS_REPLACE: Replace the existing file.
+ *   - FILE_EXISTS_RENAME: Append _{incrementing number} until the filename is
+ *     unique.
+ *   - FILE_EXISTS_ERROR: Do nothing and return FALSE.
+ * @return
+ *   TRUE for success, FALSE for failure.
  */
 function file_move(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
   $path_original = is_object($source) ? $source->filepath : $source;
@@ -558,7 +611,7 @@ function file_save_upload($source, $validators = array(), $dest = FALSE, $replac
     }
 
     // Rename potentially executable files, to help prevent exploits.
-    if (preg_match('/\.(php|pl|py|cgi|asp|js)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')) {      
+    if (preg_match('/\.(php|pl|py|cgi|asp|js)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')) {
       $file->filemime = 'text/plain';
       $file->filepath .= '.txt';
       $file->filename .= '.txt';

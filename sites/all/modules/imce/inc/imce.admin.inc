@@ -1,5 +1,5 @@
 <?php
-// $Id: imce.admin.inc,v 1.1 2010/03/17 20:55:38 ufku Exp $
+// $Id: imce.admin.inc,v 1.1.2.3 2010/06/02 08:33:21 ufku Exp $
 
 /**
  * @file
@@ -53,12 +53,26 @@ function imce_admin_form(&$form_state) {
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
+  if (variable_get('file_downloads', '') == FILE_DOWNLOADS_PRIVATE) {
+    $form['common']['disable_private'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Disable serving of private files'),
+      '#default_value' => variable_get('imce_settings_disable_private', 0),
+      '#description' => t('By default IMCE serves all files under private files directory without applying any access restrictions. This allows anonymous access to any file(/system/files/filename) unless there is a module restricting access to the files. Here you can disable this default behavior.'),
+    );
+  }
   $form['common']['textarea'] = array(
     '#type' => 'textfield',
     '#title' => t('Enable inline image/file insertion into plain textareas'),
     '#default_value' => variable_get('imce_settings_textarea', ''),
     '#maxlength' => NULL,
     '#description' => t('If you don\'t use any WYSIWYG editor, this feature will allow you to add your images or files as <strong>html code into any plain textarea</strong>. Enter <strong>comma separated textarea IDs</strong> under which you want to enable a link to IMCE. Hint: ID of Body fields in most node types is edit-body.'),
+  );
+  $form['common']['absurls'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Absolute URLs'),
+    '#default_value' => variable_get('imce_settings_absurls', 0),
+    '#description' => t('Check if you want IMCE to return absolute file URLs.'),
   );
   $form['common']['replace'] = array(
     '#type' => 'radios',
@@ -129,8 +143,12 @@ function imce_admin_submit($form, &$form_state) {
   }
   variable_set('imce_roles_profiles', $roles);
   variable_set('imce_settings_textarea', $form_state['values']['textarea']);
+  variable_set('imce_settings_absurls', $form_state['values']['absurls']);
   variable_set('imce_settings_replace', $form_state['values']['replace']);
   variable_set('imce_settings_thumb_method', $form_state['values']['thumb_method']);
+  if (isset($form_state['values']['disable_private'])) {
+    variable_set('imce_settings_disable_private', $form_state['values']['disable_private']);
+  }
   drupal_set_message(t('Changes have been saved.'));
 }
 
@@ -186,6 +204,11 @@ function imce_profile_form(&$form_state, $pid = 0) {
   $form['import'] = array(
     '#type' => 'markup',
     '#value' => imce_profile_import_html($pid),
+  );
+  $form['usertab'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display file browser tab in user profile pages.'),
+    '#default_value' => $profile['usertab'],
   );
   $form['filesize'] = array(
     '#type' => 'textfield',

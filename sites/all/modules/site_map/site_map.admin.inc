@@ -1,5 +1,5 @@
 <?php
-// $Id: site_map.admin.inc,v 1.1.2.7.2.4 2010/05/07 11:16:29 frjo Exp $
+// $Id: site_map.admin.inc,v 1.1.2.7.2.6 2010/05/24 13:28:09 frjo Exp $
 
 /**
  * @file
@@ -12,6 +12,13 @@
  */
 function site_map_admin_settings() {
 
+  // Field to set site map page title.
+  $form['site_map_page_title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Page title'),
+    '#default_value' => variable_get('site_map_page_title', t('Site map')),
+    '#description' => t('Page title that will be used on the <a href="!link">site map page</a>.', array('!link' => url('sitemap'))),
+  );
   // Field to set site map message.
   $form['site_map_message'] = array(
     '#type' => 'textarea',
@@ -21,6 +28,7 @@ function site_map_admin_settings() {
     '#rows' => 5,
     '#description' => t('Define a message to be displayed above the site map.'),
   );
+  $form['site_map_message_format'] = filter_form(variable_get('site_map_message_format', FILTER_FORMAT_DEFAULT));
 
   $form['site_map_content'] = array(
     '#type' => 'fieldset',

@@ -1,5 +1,5 @@
 <?php
-// $Id: webform.submissions.inc,v 1.18.2.5 2010/03/26 00:50:35 quicksketch Exp $
+// $Id: webform.submissions.inc,v 1.18.2.8 2010/06/21 04:40:21 quicksketch Exp $
 
 /**
  * @file
@@ -222,15 +222,23 @@ function webform_submission_render($node, $submission, $email, $format) {
   $page_count = 1;
   $excluded_components = isset($email) ? $email['excluded_components'] : array();
 
+  // Meta data that may be useful for modules implementing
+  // hook_webform_submission_render_alter().
+  $renderable['#node'] = $node;
+  $renderable['#submission'] = $submission;
+  $renderable['#email'] = $email;
+  $renderable['#format'] = $format;
+
   _webform_components_tree_build($node->webform['components'], $component_tree, 0, $page_count);
 
   // Recursively add components to the form.
   foreach ($component_tree['children'] as $cid => $component) {
     if (!in_array($cid, $excluded_components) && _webform_client_form_rule_check($node, $component, $component['page_num'], NULL, $submission)) {
-      _webform_client_form_add_component($component, NULL, $renderable, $renderable, $submission, $format);
+      _webform_client_form_add_component($node, $component, NULL, $renderable, $renderable, NULL, $submission, $format);
     }
   }
 
+  drupal_alter('webform_submission_render', $renderable);
   return drupal_render($renderable);
 }
 
@@ -266,7 +274,7 @@ function webform_get_submissions($filters = array(), $header = NULL, $pager_coun
       $where[] = $column . ' = ' . (is_numeric($value) ? '%d' : "'%s'");
     }
 
-    if (isset($filters['uid']) && $filters['uid'] === 0) {
+    if (isset($filters['uid']) && $filters['uid'] === 0 && isset($_SESSION['webform_submission'])) {
       $anonymous_sids = array_keys($_SESSION['webform_submission']);
       if (count($anonymous_sids)) {
         $placeholders = array_fill(0, count($anonymous_sids), "%d");

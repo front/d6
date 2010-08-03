@@ -1,5 +1,5 @@
 <?php
-// $Id: custom_search.admin.inc,v 1.1.2.14 2010/05/02 14:55:31 jdanthinne Exp $
+// $Id: custom_search.admin.inc,v 1.1.2.17 2010/06/01 09:46:16 jdanthinne Exp $
 
 /**
  * @file
@@ -131,6 +131,9 @@ function custom_search_admin() {
     '#description'    => t('Enter the label text for this field. The default value is "!default".', array('!default' => CUSTOM_SEARCH_CRITERIA_NEGATIVE_LABEL_DEFAULT)),
   );
 
+  // Custom search paths
+  $form = array_merge($form, custom_search_custom_paths_admin_form());
+
   // Ordering.
   $form['order'] = array(
     '#type'         => 'fieldset',
@@ -154,31 +157,28 @@ function custom_search_admin() {
   }
   $form['order']['custom_search_order']['criteria_or'] = array(
     '#title'  => t('Advanced search criterion: Or'),
-    'sort'    => array('#type' => 'weight', '#default_value' => variable_get('custom_search_criteria_or_weight', 7)),
-    '#weight' => variable_get('custom_search_criteria_or_weight', 7),
+    'sort'    => array('#type' => 'weight', '#default_value' => variable_get('custom_search_criteria_or_weight', 6)),
+    '#weight' => variable_get('custom_search_criteria_or_weight', 6),
   );
   $form['order']['custom_search_order']['criteria_phrase'] = array(
     '#title'  => t('Advanced search criterion: Phrase'),
-    'sort'    => array('#type' => 'weight', '#default_value' => variable_get('custom_search_criteria_phrase_weight', 8)),
-    '#weight' => variable_get('custom_search_criteria_phrase_weight', 8),
+    'sort'    => array('#type' => 'weight', '#default_value' => variable_get('custom_search_criteria_phrase_weight', 7)),
+    '#weight' => variable_get('custom_search_criteria_phrase_weight', 7),
   );
   $form['order']['custom_search_order']['criteria_negative'] = array(
     '#title'  => t('Advanced search criterion: Negative'),
-    'sort'    => array('#type' => 'weight', '#default_value' => variable_get('custom_search_criteria_negative_weight', 9)),
-    '#weight' => variable_get('custom_search_criteria_negative_weight', 9),
+    'sort'    => array('#type' => 'weight', '#default_value' => variable_get('custom_search_criteria_negative_weight', 8)),
+    '#weight' => variable_get('custom_search_criteria_negative_weight', 8),
+  );
+  $form['order']['custom_search_order']['custom_paths'] = array(
+    '#title'  => t('Custom search paths'),
+    'sort'    => array('#type' => 'weight', '#default_value' => variable_get('custom_search_custom_paths_weight', 9)),
+    '#weight' => variable_get('custom_search_custom_paths_weight', 9),
   );
   $form['order']['custom_search_order']['submit_button'] = array(
     '#title'  => t('Submit button'),
     'sort'    => array('#type' => 'weight', '#default_value' => variable_get('custom_search_submit_button_weight', 10)),
     '#weight' => variable_get('custom_search_submit_button_weight', 10),
-  );
-
-  // Force search path
-  $form['custom_search_path'] = array(
-    '#type'           => 'textfield',
-    '#title'          => t('Force search path'),
-    '#default_value'  => variable_get('custom_search_path', ''),
-    '#description'    => t('If you want to use a different search path, enter it here. The [key] token will be replaced by what is entered in the search box. Ie: mysearch/[key].'),
   );
 
   $form['#attributes'] = array('enctype' => 'multipart/form-data');
@@ -219,27 +219,73 @@ function custom_search_content_admin() {
 }
 
 function custom_search_results_admin() {
+  $form['custom_search_target'] = array(
+    '#type'     => 'select',
+    '#title'    => t('Results page opens in'),
+    '#options'  => array(
+      '_self'   => t('the same window'),
+      '_blank'  => t('a new window'),
+    ),
+    '#default_value'  => variable_get('custom_search_target', '_self'),
+  );
 
   $form['search_form'] = array(
-    '#type'         => 'fieldset',
-    '#title'        => t('Search forms'),
+    '#type'   => 'fieldset',
+    '#title'  => t('Search forms'),
   );
   $form['search_form']['custom_search_results_search'] = array(
     '#type'           => 'checkbox',
     '#title'          => t('Display basic search'),
     '#default_value'  => variable_get('custom_search_results_search', TRUE),
   );
-  $form['search_form']['custom_search_results_advanced_search'] = array(
+  $form['search_form']['advanced'] = array(
+    '#type'         => 'fieldset',
+    '#title'        => t('Advanced search'),
+    '#collapsible'  => TRUE,
+    '#collapsed'    => TRUE,
+  );
+  $form['search_form']['advanced']['custom_search_results_advanced_search'] = array(
     '#type'           => 'checkbox',
     '#title'          => t('Display advanced search'),
     '#default_value'  => variable_get('custom_search_results_advanced_search', TRUE),
   );
-  $form['search_form']['custom_search_results_advanced_override'] = array(
-    '#type'           => 'checkbox',
-    '#title'          => t('Apply Custom Search settings to the advanced search form'),
-    '#description'    => t('Only the selected content types, taxonomy vocabularies and criteria will be displayed.'),
-    '#default_value'  => variable_get('custom_search_results_advanced_override', FALSE),
+  $form['search_form']['advanced']['criteria'] = array(
+    '#type'         => 'fieldset',
+    '#title'        => t('Criteria'),
+    '#description'  => t('Select the criteria to display on the advanced search form.'),
+    '#collapsible'  => TRUE,
+    '#collapsed'    => TRUE,
   );
+  $form['search_form']['advanced']['criteria']['custom_search_advanced_or_display'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Or'),
+    '#default_value'  => variable_get('custom_search_advanced_or_display', TRUE),
+  );
+  $form['search_form']['advanced']['criteria']['custom_search_advanced_phrase_display'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Phrase'),
+    '#default_value'  => variable_get('custom_search_advanced_phrase_display', TRUE),
+  );
+  $form['search_form']['advanced']['criteria']['custom_search_advanced_negative_display'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Negative'),
+    '#default_value'  => variable_get('custom_search_advanced_negative_display', TRUE),
+  );
+  $form['search_form']['advanced']['types'] = array(
+    '#type'         => 'fieldset',
+    '#title'        => t('Content types'),
+    '#description'  => t('Select the content types to display on the advanced search form.'),
+    '#collapsible'  => TRUE,
+    '#collapsed'    => TRUE,
+  );
+  $options = node_get_types('names');
+  foreach ($options as $type => $name) {
+    $form['search_form']['advanced']['types']['custom_search_advanced_type_' . $type . '_display'] = array(
+      '#type'           => 'checkbox',
+      '#title'          => $name,
+      '#default_value'  => variable_get('custom_search_advanced_type_' . $type . '_display', TRUE),
+    );
+  }
 
   $form['results'] = array(
     '#type'         => 'fieldset',

@@ -1,5 +1,5 @@
 <?php
-// $Id: webform.install,v 1.40.2.9 2010/04/10 02:20:38 quicksketch Exp $
+// $Id: webform.install,v 1.40.2.11 2010/06/17 23:59:04 quicksketch Exp $
 
 /**
  * @file
@@ -1087,6 +1087,7 @@ function webform_update_6313() {
 function webform_update_6314() {
   $ret = array();
 
+  drupal_load('module', 'webform');
   webform_component_include('date');
   webform_component_include('time');
 
@@ -1155,6 +1156,15 @@ function webform_update_6316() {
   $ret = array();
   variable_del('webform_debug');
   $ret[] = array('success' => TRUE, 'query' => t('Removed the webform_debug variable which is no longer used.'));
+  return $ret;
+}
+
+/**
+ * Remove orphaned e-mail settings of nodes that have been deleted.
+ */
+function webform_update_6317() {
+  $ret = array();
+  $ret[] = update_sql("DELETE FROM {webform_emails} WHERE nid NOT IN (SELECT nid FROM {node})");
   return $ret;
 }
 

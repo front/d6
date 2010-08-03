@@ -1,5 +1,5 @@
 <?php
-// $Id: imce-content.tpl.php,v 1.9.2.1 2010/03/17 22:08:46 ufku Exp $
+// $Id: imce-content.tpl.php,v 1.9.2.2 2010/05/15 13:32:44 ufku Exp $
 $imce =& $imce_ref['imce'];//keep this line.
 ?>
 
@@ -99,8 +99,6 @@ $imce =& $imce_ref['imce'];//keep this line.
 <div id="preview-wrapper"><div id="file-preview"></div></div>
 
 </div><!-- resizable-content -->
-
-<div id="content-resizer" class="y-resizer"></div>
 
 <div id="forms-wrapper"><?php print $forms; ?></div>
 

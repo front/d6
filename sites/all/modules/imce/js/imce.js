@@ -1,4 +1,4 @@
-// $Id: imce.js,v 1.16 2010/03/17 20:55:38 ufku Exp $
+// $Id: imce.js,v 1.16.2.6 2010/06/19 15:18:06 ufku Exp $
 
 (function($) {
 //Global container.
@@ -323,7 +323,12 @@ opClick: function(name) {
     var $opcon = $('#op-contents').css({left: 0});
     $(Op.div).slideDown('normal', function() {
       setTimeout(function() {
-        imce.vars.op && $('input:first', imce.ops[imce.vars.op].div).focus();
+        if (imce.vars.op) {
+          var $inputs = $('input', imce.ops[imce.vars.op].div);
+          $inputs.eq(0).focus();
+          //form inputs become invisible in IE. Solution is as stupid as the behavior.
+          $('html').is('.ie') && $inputs.addClass('dummyie').removeClass('dummyie');
+       }
       });
     });
     var diff = left + $opcon.width() - $('#imce-content').width();
@@ -521,18 +526,18 @@ setPreview: function (fid) {
 
 //default file send function. sends the file to the new window.
 send: function (fid) {
-  if (fid) window.open(imce.getURL(fid));
+  fid && window.open(imce.getURL(fid));
 },
 
 //add an operation for an external application to which the files are send.
 setSendTo: function (title, func) {
-  imce.send = function (fid) { if(fid) func(imce.fileGet(fid), window);};
+  imce.send = function (fid) { fid && func(imce.fileGet(fid), window);};
   var opFunc = function () {
     if (imce.selcount != 1) return imce.setMessage(Drupal.t('Please select a file.'), 'error');
     imce.send(imce.vars.prvfid);
   };
   imce.vars.prvtitle = title;
-  return imce.opAdd({'title': title, func: opFunc});
+  return imce.opAdd({name: 'sendto', title: title, func: opFunc});
 },
 
 /**************** LOG MESSAGES  ********************/
@@ -699,7 +704,7 @@ decode: function (str) {
 },
 //global ajax error function
 ajaxError: function (e, response, settings, thrown) {
-  imce.setMessage(Drupal.ahahError(response, settings.url).replace('\n', '<br />'), 'error');
+  imce.setMessage(Drupal.ahahError(response, settings.url).replace(/\n/g, '<br />'), 'error');
 },
 //convert button elements to standard input buttons
 convertButtons: function(form) {
@@ -731,11 +736,18 @@ syncScroll: function(scrlEl, fixEl, bottom) {
 updateUI: function() {
   //file urls.
   var furl = imce.conf.furl, isabs = furl.indexOf('://') > -1;
-  furl.charAt(furl.length - 1) != '/' && (furl += '/');
-  imce.conf.modfix = imce.conf.clean && furl.indexOf(location.host + '/system/') > -1;
-  if (imce.vars.absurls && !isabs || !imce.vars.absurls && isabs) {
-    var baseurl = location.protocol + '//' + location.host + (location.port ? ':' + location.port : '');
-    imce.conf.furl = isabs ? furl.substr(baseurl.length) : baseurl + furl;
+  var absurls = imce.conf.absurls = imce.vars.absurls || imce.conf.absurls;
+  var host = location.host;
+  var baseurl = location.protocol + '//' + host;
+  if (furl.charAt(furl.length - 1) != '/') {
+    furl += '/';
+  }
+  imce.conf.modfix = imce.conf.clean && furl.indexOf(host + '/system/') > -1;
+  if (absurls && !isabs) {
+    imce.conf.furl = baseurl + furl;
+  }
+  else if (!absurls && isabs && furl.indexOf(baseurl) == 0) {
+    imce.conf.furl = furl.substr(baseurl.length);
   }
   //convert button elements to input elements.
   imce.convertButtons(imce.el('forms-wrapper'));
@@ -752,6 +764,8 @@ updateUI: function() {
   //log
   $('#log-prv-wrapper').before($('#log-prv-wrapper > #preview-wrapper')).remove();
   $('#log-clearer').remove();
+  //content resizer
+  $('#content-resizer').remove();
   //message-box
   imce.msgBox = imce.el('message-box') || $('<div id="message-box"></div>').prependTo('#imce-content')[0];
   //help box & ie fix

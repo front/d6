@@ -1,4 +1,4 @@
-/* $Id: ud_regions.css,v 1.1.2.2 2010/04/19 12:22:40 swentel Exp $ */
+/* $Id: ud_regions.css,v 1.1.2.3 2010/05/31 12:16:35 swentel Exp $ */
 
 .ud-region-header {
   clear: both;
@@ -51,4 +51,19 @@
 .ud-two-sidebars .ud-region-middle {
   margin-left: 25%;
   margin-right: 25%;
+}
+
+/* Fix for IE */
+.ud-no-sidebars {
+  display:block;
+  float:none;
+  margin-right:0;
+  width:auto;
+}
+
+.ud-sidebar-right {
+  *display: inline;
+  *float: right;
+  *width: 100%;
+  *margin-left: -100%;
 }

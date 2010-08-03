@@ -1,4 +1,4 @@
-// $Id: imce_extras.js,v 1.3 2010/03/17 20:55:38 ufku Exp $
+// $Id: imce_extras.js,v 1.3.2.2 2010/06/05 08:03:20 ufku Exp $
 //This pack implemets: keyboard shortcuts, file sorting, resize bars, and inline thumbnail preview.
 
 (function($) {
@@ -109,11 +109,10 @@ imce.initiateSorting = function() {
   imce.hooks.navigate.push(function (data, olddir, cached) {
     cached ? imce.updateSortState(data.cid, data.dsc) : imce.firstSort();
   });
-  imce.vars.cid = imce.cookie('icid')*1;
-  imce.vars.dsc = imce.cookie('idsc')*1;
+  imce.vars.cid = imce.cookie('imcecid') * 1;
+  imce.vars.dsc = imce.cookie('imcedsc') * 1;
   imce.cols = imce.el('file-header').rows[0].cells;
   $(imce.cols).click(function () {imce.columnSort(this.cellIndex, imce.hasC(this, 'asc'));});
-  $(window).unload(function() {imce.cookie('icid', imce.vars.cid); imce.cookie('idsc', imce.vars.dsc ? 1 : 0);});
   imce.firstSort();
 };
 
@@ -145,8 +144,8 @@ imce.columnSort = function(cid, dsc) {
 imce.updateSortState = function(cid, dsc) {
   $(imce.cols[imce.vars.cid]).removeClass(imce.vars.dsc ? 'desc' : 'asc');
   $(imce.cols[cid]).addClass(dsc ? 'desc' : 'asc');
-  imce.vars.cid = cid;
-  imce.vars.dsc = dsc;
+  imce.vars.cid != cid && imce.cookie('imcecid', imce.vars.cid = cid);
+  imce.vars.dsc != dsc && imce.cookie('imcedsc', (imce.vars.dsc = dsc) ? 1 : 0);
 };
 
 //sorters
@@ -159,15 +158,13 @@ imce.sortNumDsc = function(a, b) {return b-a};
 
 //set resizers for resizable areas and recall previous dimensions
 imce.initiateResizeBars = function () {
-  imce.setResizer('navigation-resizer', 'X', 'navigation-wrapper', null, 1);
-  imce.setResizer('browse-resizer', 'Y', 'browse-wrapper', 'preview-wrapper', 50);
-  imce.setResizer('content-resizer', 'Y', 'resizable-content', null, 150, imce.resizeRows);
-  imce.recallDimensions();
-  $(window).unload(function() {
-    imce.cookie('ih1', $(imce.BW).height());
-    imce.cookie('ih2', $(imce.PW).height());
-    imce.cookie('iw1', Math.max($(imce.NW).width(), 1));
+  imce.setResizer('navigation-resizer', 'X', 'navigation-wrapper', null, 1, function(p1, p2, m) {
+    p1 != p2 && imce.cookie('imcenww', p2);
   });
+  imce.setResizer('browse-resizer', 'Y', 'browse-wrapper', 'preview-wrapper', 50, function(p1, p2, m) {
+    p1 != p2 && imce.cookie('imcebwh', p2);
+  });
+  imce.recallDimensions();
 };
 
 //set a resize bar
@@ -194,23 +191,38 @@ imce.setResizer = function (resizer, axis, area1, area2, Min, callback) {
   });
 };
 
-//set heights of browse and preview areas.
-imce.resizeRows = function(start, end, Max) {
-  var el = $(imce.BW), h = el.height();
-  var diff = end - start, r = h / start, d = Math.round(diff * r), h1 = Math.max(h + d, 50);
-  el.height(h1);
-  $(imce.PW).height(end - h1 - $(imce.el('browse-resizer')).height() - 1);
+//get&set area dimensions of the last session from the cookie
+imce.recallDimensions = function() {
+  var $body = $(document.body);
+  if (!$body.is('.imce')) return;
+  //row heights
+  imce.recallHeights(imce.cookie('imcebwh') * 1);
+  $(window).resize(function(){imce.recallHeights()});
+  //navigation wrapper
+  var nwOldWidth = imce.cookie('imcenww') * 1;
+  nwOldWidth && $(imce.NW).width(Math.min(nwOldWidth, $body.width() - 10));
 };
 
-//get area dimensions of the last session from the cookie
-imce.recallDimensions = function() {
-  if (h1 = imce.cookie('ih1')*1) {
-    var h2 = imce.cookie('ih2')*1, w1 = imce.cookie('iw1')*1, w2 = imce.cookie('iw2')*1;
-    var el = $(imce.BW), h = el.height(), w = el.width();
-    $(imce.NW).width(Math.min(w1, w-5));
-    el.height(h1);
-    $(imce.PW).height(h2);
+//set row heights with respect to window height
+imce.recallHeights = function(bwFixedHeight) {
+  //window & body dimensions
+  var winHeight = $.browser.opera ? window.innerHeight : $(window).height();
+  var bodyHeight = $(document.body).outerHeight(true);
+  var diff = winHeight - bodyHeight;
+  var bwHeight = $(imce.BW).height(), pwHeight = $(imce.PW).height();
+  if (bwFixedHeight) {
+    //row heights
+    diff -= bwFixedHeight - bwHeight;
+    bwHeight = bwFixedHeight;
+    pwHeight += diff;
   }
+  else {
+    diff = parseInt(diff/2);
+    bwHeight += diff;
+    pwHeight += diff;
+  }
+  $(imce.BW).height(bwHeight);
+  $(imce.PW).height(pwHeight);
 };
 
 //cookie get & set
@@ -218,7 +230,7 @@ imce.cookie = function (name, value) {
   if (typeof(value) == 'undefined') {//get
     return unescape((document.cookie.match(new RegExp('(^|;) *'+ name +'=([^;]*)(;|$)')) || ['', '', ''])[2]);
   }
-  document.cookie = name +'='+ escape(value) +'; expires='+ (new Date(new Date()*1 + 30*86400000)).toGMTString() +'; path=/';//set
+  document.cookie = name +'='+ escape(value) +'; expires='+ (new Date(new Date() * 1 + 15 * 86400000)).toGMTString() +'; path=' + Drupal.settings.basePath + 'imce';//set
 };
 
 //view thumbnails(smaller than tMaxW x tMaxH) inside the rows.

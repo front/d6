@@ -1,5 +1,5 @@
 <?php
-// $Id: shadowbox.admin.inc,v 1.1.2.9 2010/02/24 18:50:33 nicholasalipaz Exp $
+// $Id: shadowbox.admin.inc,v 1.1.2.9.2.1 2010/03/26 16:41:26 nicholasalipaz Exp $
 
 /**
  * @file
@@ -224,7 +224,7 @@ function shadowbox_global_settings() {
     '#type' => 'checkbox',
     '#title' => t('Auto-play movies'),
     '#description' => t('Automatically play movies when they are loaded.'),
-    '#default_value' => variable_get('shadowbox_autoplay_movies', TRUE),
+    '#default_value' => variable_get('shadowbox_autoplay_movies', 1),
   );
   $form['shadowbox']['shadowbox_options']['movies']['shadowbox_show_movie_controls'] = array(
     '#type' => 'checkbox',

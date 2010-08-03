@@ -1,5 +1,5 @@
 <?php
-// $Id: imce.page.inc,v 1.1 2010/03/17 20:55:38 ufku Exp $
+// $Id: imce.page.inc,v 1.1.2.6 2010/06/18 13:00:20 ufku Exp $
 
 /**
  * @file
@@ -14,6 +14,13 @@ function imce() {
   $jsop = isset($_GET['jsop']) ? $_GET['jsop'] : NULL;
   print imce_page($GLOBALS['user'], $jsop);
   exit();
+}
+
+/**
+ * q = user/x/imce.
+ */
+function imce_user_page($account) {
+  return theme('imce_user_page', $account);
 }
 
 /**
@@ -71,7 +78,7 @@ function imce_content($user, $jsop = NULL) {
 
   //make necessary changes for js conversion
   $imce['dir'] = str_replace('%2F', '/', rawurlencode($imce['dir']));
-  unset($imce['files'], $imce['name'], $imce['directories'], $imce['subdirectories'], $imce['filesize'], $imce['quota'], $imce['tuquota'], $imce['thumbnails'], $imce['uid']);
+  unset($imce['files'], $imce['name'], $imce['directories'], $imce['subdirectories'], $imce['filesize'], $imce['quota'], $imce['tuquota'], $imce['thumbnails'], $imce['uid'], $imce['usertab']);
 
   drupal_add_js($imce_ref, 'setting');
 
@@ -97,6 +104,8 @@ function imce_js($user, $jsop = '') {
   //messages
   $response['messages'] = drupal_get_messages();
 
+  //disable devel log.
+  $GLOBALS['devel_shutdown'] = FALSE;
   //for upload we must return plain text header.
   drupal_set_header('Content-Type: text/'. ($jsop == 'upload' ? 'html' : 'javascript') .'; charset=utf-8');
   print drupal_to_js($response);
@@ -295,6 +304,7 @@ function imce_upload_submit($form, &$form_state) {
     $file->uid = $imce['uid'];//global user may not be the owner.
     $file->status = FILE_STATUS_PERMANENT;//make permanent
     drupal_write_record('files', $file, array('fid'));//update
+    imce_file_register($file);
     drupal_set_message(t('%filename has been uploaded.', array('%filename' => $file->filename)));
 
     //update file list
@@ -385,37 +395,42 @@ function imce_process_files($filenames, &$imce, $function, $args = array()) {
  */
 function imce_delete_file($filename, &$imce) {
   $filepath = file_directory_path() . ($imce['dir'] == '.' ? '' : '/'. $imce['dir']) .'/'. $filename;
-  $file = db_fetch_object(db_query("SELECT f.* FROM {files} f WHERE f.filepath = '%s'", $filepath));
+  if (!imce_delete_filepath($filepath)) {
+    return FALSE;
+  }
+  imce_remove_file($filename, $imce);
+  return TRUE;
+}
+
+/**
+ * Delete a file by path.
+ */
+function imce_delete_filepath($filepath) {
+  $file = db_fetch_object(db_query("SELECT * FROM {files} WHERE filepath = '%s'", $filepath));
 
   //file exists in database
   if ($file) {
-    //let filefield handle the deletion
-    if (function_exists('field_file_delete')) {
-      $result = field_file_delete($file);
-      //deletion blocked by an other module.
-      if (is_array($result)) {
-        drupal_set_message(t('%filename is in use by another application.', array('%filename' => $file->filename)), 'error');
-        return FALSE;
-      }
-      //general failure
-      if (!$result) {
-        return FALSE;
-      }
+    //prevent imce returning ref count
+    $file->imce_noref = TRUE;
+    //check references
+    $refs = array_filter(module_invoke_all('file_references', $file));
+    //file is in use
+    if (!empty($refs)) {
+      drupal_set_message(t('%filename is in use by another application.', array('%filename' => $file->filename)), 'error');
+      return FALSE;
     }
-    //delete manually
-    else {
-      if (!file_delete($file->filepath)) {
-        return FALSE;
-      }
-      db_query('DELETE FROM {files} WHERE fid = %d', $file->fid);
+    //prepare deletion
+    module_invoke_all('file_delete', $file);
+    if (!file_delete($file->filepath)) {
+      return FALSE;
     }
+    db_query('DELETE FROM {files} WHERE fid = %d', $file->fid);
   }
   //not in db. probably loaded via ftp.
   elseif (!file_delete($filepath)) {
     return FALSE;
   }
 
-  imce_remove_file($filename, $imce);
   return TRUE;
 }
 
@@ -534,6 +549,7 @@ function imce_resize_image($filename, &$imce, $width, $height, $copy = TRUE, $de
 
   //save the file
   drupal_write_record('files', $file, $update);
+  imce_file_register($file);
 
   //update file list
   //if the file was scaled get the new dimensions
@@ -698,9 +714,10 @@ function imce_initiate_profile($user) {
   if ($imce = imce_user_profile($user)) {
     imce_process_directories($imce, $user);
     if (!empty($imce['directories'])) {
-      $imce['uid'] = (int)$user->uid;
+      $imce['uid'] = (int) $user->uid;
       $imce['url'] = url($_GET['q']);
       $imce['clean'] = variable_get('clean_url', 0) == 1;
+      $imce['absurls'] = variable_get('imce_settings_absurls', 0) == 1;
       $imce['furl'] = file_create_url('');
       $imce['filesize'] *= 1048576;//convert from Mb to byte
       $imce['quota'] *= 1048576;
@@ -1054,4 +1071,33 @@ function imce_tree_html(&$imce, $paths, $q = '?', $prefix = '', $eprefix = '') {
     $html = '<ul>'. $html .'</ul>';
   }
   return $html;
+}
+
+/**
+ * Returns the text for the root directory in a directory tree.
+ */
+function theme_imce_root_text($imce_ref) {
+  //$imce = &$imce_ref['imce'];
+  return '&lt;' . t('root') . '&gt;';
+}
+
+/**
+ * Returns the html for user's file browser tab.
+ */
+function theme_imce_user_page($account) {
+  global $user;
+  $options = array();
+  //switch to account's active folder
+  if ($user->uid == 1 && $account->uid != 1) {
+    $imce = imce_initiate_profile($account);
+    $options['query'] = array('dir' => $imce['dir']);
+  }
+  return '<iframe src="' . url('imce', $options) . '" frameborder="0" style="border: 1px solid #eee; width: 99%; height: 520px" class="imce-frame"></iframe>';
+}
+
+/**
+ * Registers the file as an IMCE file.
+ */
+function imce_file_register($file) {
+  return $file->fid && @db_query('INSERT INTO {imce_files} (fid) VALUES(%d)', $file->fid);
 }

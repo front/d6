@@ -1,4 +1,4 @@
-/* $Id: vd_regions.css,v 1.1.2.3 2010/04/19 12:22:34 swentel Exp $ */
+/* $Id: vd_regions.css,v 1.1.2.4 2010/05/31 12:16:57 swentel Exp $ */
 
 .vd-region-header {
   clear: both;
@@ -51,4 +51,19 @@
 .vd-two-sidebars .vd-region-middle {
   margin-left: 25%;
   margin-right: 25%;
+}
+
+/* Fix for IE */
+.vd-no-sidebars {
+  display:block;
+  float:none;
+  margin-right:0;
+  width:auto;
+}
+
+.vd-sidebar-right {
+  *display: inline;
+  *float: right;
+  *width: 100%;
+  *margin-left: -100%;
 }

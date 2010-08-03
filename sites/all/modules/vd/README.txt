@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.1.2.1 2010/04/15 15:54:23 swentel Exp $ */
+/* $Id: README.txt,v 1.1.2.2 2010/07/10 21:48:05 swentel Exp $ */
 
 -- SUMMARY --
 
@@ -6,10 +6,10 @@ For a full description of the module, visit the project page:
   http://drupal.org/project/vd
   
 For documentation of the module, visit the handbook pages:
-  http://drupal.org/node/527302
+  http://drupal.org/node/644662
 
 To submit bug reports and feature suggestions, or to track changes:
-  http://drupal.org/project/issues/ud
+  http://drupal.org/project/issues/vd
 
 -- REQUIRED --
 

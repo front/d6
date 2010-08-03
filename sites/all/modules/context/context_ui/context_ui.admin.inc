@@ -1,17 +1,15 @@
 <?php
-// $Id: context_ui.admin.inc,v 1.1.2.7.2.12.2.3 2010/02/09 04:38:01 yhahn Exp $
+// $Id: context_ui.admin.inc,v 1.1.2.7.2.12.2.9 2010/07/29 14:42:08 yhahn Exp $
 
 /**
  * Context listing form. Allows for quick creation of new contexts.
  */
 function context_ui_admin() {
-  // rebuild & clear caches
-  _block_rehash();
   context_invalidate_cache();
 
   $form = array(
     '#theme' => 'context_ui_admin',
-    '#contexts' => context_load(),
+    '#contexts' => context_load(NULL, TRUE),
   );
   $form['name'] = array(
     '#title' => t('Name'),
@@ -64,10 +62,6 @@ function context_ui_admin_submit(&$form, &$form_state) {
  *   A Drupal form array.
  */
 function context_ui_form(&$form_state, $op, $context = NULL) {
-  // Set a context to prevent implementation of 
-  // hook_context_reaction_fetch_alter() from running so we can edit the real
-  // values of the context.
-  context_set('context_ui', 'no_alter', TRUE);
   ctools_include('export');
 
   $context = !$context ? ctools_export_new_object('context') : $context;
@@ -157,18 +151,19 @@ function context_ui_form(&$form_state, $op, $context = NULL) {
     ),
     'plugins' => array('#tree' => TRUE),
   );
-  $conditions = array_keys(context_conditions(TRUE));
+  $conditions = array_keys(context_conditions());
   sort($conditions);
   foreach ($conditions as $condition) {
-    $plugin = context_get_plugin('condition', $condition);
-    $form['conditions']['plugins'][$condition] = array(
-      '#tree' => TRUE,
-      '#plugin' => $plugin,
-      '#context_enabled' => isset($context->conditions[$condition]), // This flag is used at the theme layer.
-      'values' => $plugin->condition_form($context),
-      'options' => $plugin->options_form($context),
-    );
-    $form['conditions']['selector']['#options'][$condition] = $plugin->title;
+    if ($plugin = context_get_plugin('condition', $condition)) {
+      $form['conditions']['plugins'][$condition] = array(
+        '#tree' => TRUE,
+        '#plugin' => $plugin,
+        '#context_enabled' => isset($context->conditions[$condition]), // This flag is used at the theme layer.
+        'values' => $plugin->condition_form($context),
+        'options' => $plugin->options_form($context),
+      );
+      $form['conditions']['selector']['#options'][$condition] = $plugin->title;
+    }
   }
 
   // Reaction plugin forms
@@ -188,15 +183,16 @@ function context_ui_form(&$form_state, $op, $context = NULL) {
     ),
     'plugins' => array('#tree' => TRUE),
   );
-  $reactions = array_keys(context_reactions(TRUE));
+  $reactions = array_keys(context_reactions());
   sort($reactions);
   foreach ($reactions as $reaction) {
-    $plugin = context_get_plugin('reaction', $reaction);
-    $form['reactions']['plugins'][$reaction] = $plugin->options_form($context) + array(
-      '#plugin' => $plugin,
-      '#context_enabled' => isset($context->reactions[$reaction]), // This flag is used at the theme layer.
-    );
-    $form['reactions']['selector']['#options'][$reaction] = $plugin->title;
+    if ($plugin = context_get_plugin('reaction', $reaction)) {
+      $form['reactions']['plugins'][$reaction] = $plugin->options_form($context) + array(
+        '#plugin' => $plugin,
+        '#context_enabled' => isset($context->reactions[$reaction]), // This flag is used at the theme layer.
+      );
+      $form['reactions']['selector']['#options'][$reaction] = $plugin->title;
+    }
   }
 
   // Buttons
@@ -311,7 +307,7 @@ function context_ui_import_submit($form, &$form_state) {
   $items = array();
   if ($import = $form_state['values']['import']) {
     ob_start();
-    $context = eval($import);
+    eval($import);
     ob_end_clean();
   }
   if (is_object($context)) {
@@ -327,7 +323,7 @@ function context_ui_import_submit($form, &$form_state) {
     }
   }
   else {
-    drupal_set_message(t('An error occurred while importing. Please check your context definition.', 'error'));
+    drupal_set_message(t('An error occurred while importing. Please check your context definition.'), 'error');
     $form_state['redirect'] = 'admin/build/context';
   }
 }
@@ -344,7 +340,9 @@ function context_ui_import_submit($form, &$form_state) {
 function context_ui_export(&$form_state, $context) {
   ctools_include('export');
   drupal_set_title(t('Export %title', array('%title' => $context->name)));
-  return ctools_export_form($form_state, context_export_context($context), t('Export'));
+  $form = ctools_export_form($form_state, context_export_context($context), t('Export'));
+  $form['code']['#description'] = t('To use this context export in a module enable the <strong>Bulk Export</strong> module and select contexts to export on the !bulkexporter page.', array('!bulkexporter' => l(t('Bulk Exporter'), 'admin/build/bulkexport')));
+  return $form;
 }
 
 /**

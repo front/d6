@@ -1,5 +1,5 @@
 <?php
-// $Id: cd.module,v 1.1.2.24 2010/04/10 14:53:13 swentel Exp $
+// $Id: cd.module,v 1.1.2.28 2010/06/07 16:15:14 swentel Exp $
 
 /**
  * @file
@@ -13,7 +13,7 @@ function cd_ds_api() {
 
   $help = array(
     t('<h3>Comment displays</h3>
-      <p>This module comes with a cd-comment.tpl.php template file, available in the templates folder, which is optimized for use with Comment Displays. You can copy the file to your themes folder to use your own version if you want. Copying the file to your theme folder will only work if comment.tpl.php is in the theme folder, so you could also copy the code into comment.tpl.php if you don\'t want to have those 2 files in the directory.</p>')
+      <p>This module comes with a cd-comment.tpl.php template file, available in the templates folder, which is optimized for use with Comment Displays. You can copy the file to your themes folder to use your own version if you want. Copying the file to your theme folder will only work if comment.tpl.php is in the theme folder.</p>')
   );
 
   return array(
@@ -55,6 +55,11 @@ function comment_ds_fields($type_name, $build_mode, $extra) {
       'type' => DS_FIELD_TYPE_PREPROCESS,
       'status' => DS_FIELD_STATUS_STATIC,
     ),
+    'name_linked' => array(
+      'title' => t('Username linked'),
+      'type' => DS_FIELD_TYPE_PREPROCESS,
+      'status' => DS_FIELD_STATUS_STATIC,
+    ),
     'mail' => array(
       'title' => t('E-mail'),
       'type' => DS_FIELD_TYPE_PREPROCESS,
@@ -73,6 +78,11 @@ function comment_ds_fields($type_name, $build_mode, $extra) {
     ),
     'subject' => array(
       'title' => t('Subject'),
+      'type' => DS_FIELD_TYPE_PREPROCESS,
+      'status' => DS_FIELD_STATUS_STATIC,
+    ),
+    'title' => array(
+      'title' => t('Subject linked'),
       'type' => DS_FIELD_TYPE_PREPROCESS,
       'status' => DS_FIELD_STATUS_STATIC,
     ),
@@ -203,7 +213,6 @@ function cd_comment(&$comment, $op) {
  * Implementation of hook_preprocess_comment().
  */
 function cd_preprocess_comment(&$vars) {
-
   // add links to comment object
   if (isset($vars['links'])) {
     $vars['comment']->links = $vars['links'];
@@ -214,6 +223,12 @@ function cd_preprocess_comment(&$vars) {
   if (!$comment->render_by_ds) {
     return;
   }
+
+  // Add author to vars['comment'].
+  $vars['comment']->name_linked = $vars['author'];
+
+  // Add linked title to vars['comment'].
+  $vars['comment']->title = l($comment->subject, 'node/'. $comment->nid, array('fragment' => "comment-$comment->cid"));
 
   // Add cd-comment template suggestion.
   $vars['template_files'][] = 'cd-comment';

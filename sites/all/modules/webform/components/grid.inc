@@ -1,5 +1,5 @@
 <?php
-// $Id: grid.inc,v 1.14.2.6 2010/04/08 07:32:39 quicksketch Exp $
+// $Id: grid.inc,v 1.14.2.8 2010/06/20 18:10:33 quicksketch Exp $
 
 /**
  * @file
@@ -34,7 +34,7 @@ function _webform_defaults_grid() {
 
 
 /**
- * Implementation of _webform_help_grid().
+ * Implementation of _webform_theme_component().
  */
 function _webform_theme_grid() {
   return array(
@@ -162,12 +162,15 @@ function _webform_render_grid($component, $value = NULL, $filter = TRUE) {
   foreach ($questions as $key => $question) {
     if ($question != '') {
       $element[$key] = array(
-        '#title'         => $question,
-        '#required'      => $component['mandatory'],
-        '#options'       => $options,
-        '#type'          => 'radios',
-        '#process'       => array('expand_radios', 'webform_expand_select_ids'),
-        '#validated'     => TRUE, // Webform handles validation separately.
+        '#title' => $question,
+        '#required' => $component['mandatory'],
+        '#options' => $options,
+        '#type' => 'radios',
+        '#process' => array('expand_radios', 'webform_expand_select_ids'),
+
+        // Webform handles validation manually.
+        '#validated' => TRUE,
+        '#webform_validated' => FALSE,
       );
     }
   }

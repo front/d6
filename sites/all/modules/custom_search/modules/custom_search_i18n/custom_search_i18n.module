@@ -1,5 +1,5 @@
 <?php
-// $Id: custom_search_i18n.module,v 1.1.2.4 2010/05/04 17:18:50 jdanthinne Exp $
+// $Id: custom_search_i18n.module,v 1.1.2.5 2010/05/11 09:31:44 jdanthinne Exp $
 
 /**
  * @file
@@ -73,10 +73,12 @@ function custom_search_i18n_form_alter(&$form, $form_state, $form_id) {
 }
 
 function custom_search_i18n_preprocess_search_results(&$variables) {
-  $title = i18nstrings('custom_search:filter:1:label', variable_get('custom_search_filter_label', CUSTOM_SEARCH_FILTER_LABEL_DEFAULT));
-  $start = strpos($variables['search_results'], '<dd class="search-results-filter"><div class="item-list"><h3>');
-  $stop = strpos($variables['search_results'], '</h3>', $start);
-  $variables['search_results'] = substr($variables['search_results'], 0, $start) . '<dd class="search-results-filter"><div class="item-list"><h3>' . $title . substr($variables['search_results'], $stop);
+  if (user_access('use custom search') && variable_get('custom_search_filter', 'disabled') != 'disabled') {
+    $title = i18nstrings('custom_search:filter:1:label', variable_get('custom_search_filter_label', CUSTOM_SEARCH_FILTER_LABEL_DEFAULT));
+    $start = strpos($variables['search_results'], '<dd class="search-results-filter"><div class="item-list"><h3>');
+    $stop = strpos($variables['search_results'], '</h3>', $start);
+    $variables['search_results'] = substr($variables['search_results'], 0, $start) . '<dd class="search-results-filter"><div class="item-list"><h3>' . $title . substr($variables['search_results'], $stop);
+  }
 }
 
 /**

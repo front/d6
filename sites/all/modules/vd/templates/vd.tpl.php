@@ -1,5 +1,5 @@
 <?php
-// $Id: vd.tpl.php,v 1.1.2.2 2010/04/02 13:29:08 swentel Exp $
+// $Id: vd.tpl.php,v 1.1.2.3 2010/05/27 09:22:31 zuuperman Exp $
 
 /**
  * This template is optimized for use with the Views displays module.
@@ -7,7 +7,7 @@
  */
 ?>
 
-<div class="view view-<?php print $css_name; ?> view-id-<?php print $name; ?> view-display-id-<?php print $display_id; ?> view-dom-id-<?php print $dom_id; ?>">
+<div class="<?php print $classes; ?>">
 
 <?php print $views_content; ?>
 

@@ -5,9 +5,9 @@ core = 6.x
 package = Custom Search
 dependencies[] = custom_search
 dependencies[] = i18nstrings
-; Information added by drupal.org packaging script on 2010-05-05
-version = "6.x-1.3"
+; Information added by drupal.org packaging script on 2010-06-07
+version = "6.x-1.4"
 core = "6.x"
 project = "custom_search"
-datestamp = "1273044305"
+datestamp = "1275894013"
 

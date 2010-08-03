@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.1 2009/10/27 11:43:02 swentel Exp $ */
+/* $Id: README.txt,v 1.1.2.1 2010/07/10 21:49:48 swentel Exp $ */
 
 -- SUMMARY --
 
@@ -6,7 +6,7 @@ For a full description of the module, visit the project page:
   http://drupal.org/project/cd
   
 For documentation of the module, visit the handbook pages:
-  http://drupal.org/node/527302
+  http://drupal.org/node/644662
 
 To submit bug reports and feature suggestions, or to track changes:
   http://drupal.org/project/issues/cd
