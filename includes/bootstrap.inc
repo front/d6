@@ -1,5 +1,5 @@
 <?php
-// $Id: bootstrap.inc,v 1.206.2.23 2010/06/02 13:07:45 goba Exp $
+// $Id: bootstrap.inc,v 1.206.2.29 2010/08/06 11:50:24 goba Exp $
 
 /**
  * @file
@@ -221,6 +221,11 @@ define('LANGUAGE_LTR', 0);
  * Language written right to left. Possible value of $language->direction.
  */
 define('LANGUAGE_RTL', 1);
+
+// Hide E_DEPRECATED messages.
+if (defined('E_DEPRECATED')) {
+  error_reporting(error_reporting() & ~E_DEPRECATED);
+}
 
 /**
  * Start the timer with the specified name. If you start and stop
@@ -552,7 +557,7 @@ function drupal_get_filename($type, $name, $filename = NULL) {
  * with variable_set() as well as those explicitly specified in the configuration
  * file.
  */
-function variable_init($conf = array(), $regenerate = FALSE) {
+function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 0) {
   // NOTE: caching the variables improves performance by 20% when serving cached pages.
   if (!$regenerate && $cached = cache_get('variables', 'cache')) {
     $variables = $cached->data;
@@ -572,8 +577,15 @@ function variable_init($conf = array(), $regenerate = FALSE) {
       // Wait for another request that is already doing this work.
       lock_wait('variable_cache_regenerate');
 
-      // Run the function again.
-      return variable_init($conf, $regenerate);
+      // Run the function again. Try a limited number of times to avoid 
+      // infinite recursion if the database connection is invalid for  
+      // some reason, e.g., mysqld restart, loss of network, etc.
+      $recursion_depth++;
+      if ($recursion_depth < 50) {
+        return variable_init($conf, $regenerate, $recursion_depth);
+      }
+
+      $variables = array();
     }
   }
 
@@ -585,7 +597,11 @@ function variable_init($conf = array(), $regenerate = FALSE) {
 }
 
 /**
- * Return a persistent variable.
+ * Returns a persistent variable.
+ *
+ * Case-sensitivity of the variable_* functions depends on the database
+ * collation used. To avoid problems, always use lower case for persistent
+ * variable names.
  *
  * @param $name
  *   The name of the variable to return.
@@ -603,7 +619,11 @@ function variable_get($name, $default) {
 }
 
 /**
- * Set a persistent variable.
+ * Sets a persistent variable.
+ *
+ * Case-sensitivity of the variable_* functions depends on the database
+ * collation used. To avoid problems, always use lower case for persistent
+ * variable names.
  *
  * @param $name
  *   The name of the variable to set.
@@ -614,7 +634,7 @@ function variable_get($name, $default) {
  * @see variable_del(), variable_get()
  */
 function variable_set($name, $value) {
-  global $conf;
+  global $conf, $db_prefix;
 
   $serialized_value = serialize($value);
   db_query("UPDATE {variable} SET value = '%s' WHERE name = '%s'", $serialized_value, $name);
@@ -624,11 +644,22 @@ function variable_set($name, $value) {
 
   $conf[$name] = $value;
 
+  // The write-through rebuild optimization isn't compatible with SimpleTest.
+  // Because array-based prefixes don't work with SimpleTest, we can assume
+  // that a non-string prefix indicates lack of SimpleTest operations.
+  if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
+    cache_clear_all('variables', 'cache');
+  }
+  
   variable_cache_rebuild();
 }
 
 /**
- * Unset a persistent variable.
+ * Unsets a persistent variable.
+ *
+ * Case-sensitivity of the variable_* functions depends on the database
+ * collation used. To avoid problems, always use lower case for persistent
+ * variable names.
  *
  * @param $name
  *   The name of the variable to undefine.
@@ -636,12 +667,17 @@ function variable_set($name, $value) {
  * @see variable_get(), variable_set()
  */
 function variable_del($name) {
-  global $conf;
+  global $conf, $db_prefix;
 
   db_query("DELETE FROM {variable} WHERE name = '%s'", $name);
 
   unset($conf[$name]);
 
+  // The write-through rebuild optimization isn't compatible with SimpleTest.
+  if (strpos($db_prefix, 'simpletest') === 0) {
+    cache_clear_all('variables', 'cache');
+  }
+  
   variable_cache_rebuild();
 }
 
@@ -1066,7 +1102,7 @@ function bootstrap_hooks() {
 function drupal_unpack($obj, $field = 'data') {
   if ($obj->$field && $data = unserialize($obj->$field)) {
     foreach ($data as $key => $value) {
-      if (!isset($obj->$key)) {
+      if (!empty($key) && !isset($obj->$key)) {
         $obj->$key = $value;
       }
     }
@@ -1184,7 +1220,8 @@ function request_uri() {
  * Log a system message.
  *
  * @param $type
- *   The category to which this message belongs.
+ *   The category to which this message belongs. Can be any string, but the
+ *   general practice is to use the name of the module calling watchdog().
  * @param $message
  *   The message to store in the log. See t() for documentation
  *   on how $message and $variables interact. Keep $message
@@ -1194,7 +1231,8 @@ function request_uri() {
  *   NULL if message is already translated or not possible to
  *   translate.
  * @param $severity
- *   The severity of the message, as per RFC 3164
+ *   The severity of the message, as per RFC 3164. Possible values are
+ *   WATCHDOG_ERROR, WATCHDOG_WARNING, etc.
  * @param $link
  *   A link to associate with the message.
  *
@@ -1218,7 +1256,7 @@ function watchdog($type, $message, $variables = array(), $severity = WATCHDOG_NO
     );
 
   // Call the logging hooks to log/process the message
-  foreach (module_implements('watchdog', TRUE) as $module) {
+  foreach (module_implements('watchdog') as $module) {
     module_invoke($module, 'watchdog', $log_message);
   }
 }
@@ -1362,13 +1400,27 @@ function drupal_anonymous_user($session = '') {
  *     DRUPAL_BOOTSTRAP_PATH: set $_GET['q'] to Drupal path of request.
  *     DRUPAL_BOOTSTRAP_FULL: Drupal is fully loaded, validate and fix input data.
  */
-function drupal_bootstrap($phase) {
+function drupal_bootstrap($phase = NULL) {
   static $phases = array(DRUPAL_BOOTSTRAP_CONFIGURATION, DRUPAL_BOOTSTRAP_EARLY_PAGE_CACHE, DRUPAL_BOOTSTRAP_DATABASE, DRUPAL_BOOTSTRAP_ACCESS, DRUPAL_BOOTSTRAP_SESSION, DRUPAL_BOOTSTRAP_LATE_PAGE_CACHE, DRUPAL_BOOTSTRAP_LANGUAGE, DRUPAL_BOOTSTRAP_PATH, DRUPAL_BOOTSTRAP_FULL), $phase_index = 0;
 
-  while ($phase >= $phase_index && isset($phases[$phase_index])) {
-    $current_phase = $phases[$phase_index];
-    unset($phases[$phase_index++]);
-    _drupal_bootstrap($current_phase);
+  if (isset($phase)) {
+    while ($phase >= $phase_index && isset($phases[$phase_index])) {
+      $current_phase = $phases[$phase_index];
+      unset($phases[$phase_index++]);
+      _drupal_bootstrap($current_phase);
+    }
+  }
+  
+  return $phase_index;
+}
+
+/**
+ * Redirect to the installer if an essential table is missing.
+ */
+function detect_installation_or_run_installer() {
+  if (variable_get('pressflow_smart_start', FALSE) && !db_table_exists('access')) {
+    include_once 'includes/install.inc';
+    install_goto('install.php');
   }
 }
 
@@ -1403,11 +1455,11 @@ function _drupal_bootstrap($phase) {
       // running tests. However, for security reasons, it is imperative that we
       // validate we ourselves made the request.
       $GLOBALS['simpletest_installed'] = TRUE;
-      if (isset($_SERVER['HTTP_USER_AGENT']) && (strpos($_SERVER['HTTP_USER_AGENT'], "simpletest") !== FALSE) && !drupal_valid_test_ua($_SERVER['HTTP_USER_AGENT'])) {
-        header($_SERVER['SERVER_PROTOCOL'] . ' 403 Forbidden');
-        exit;
-      }
       if (isset($_SERVER['HTTP_USER_AGENT']) && preg_match("/^(simpletest\d+);/", $_SERVER['HTTP_USER_AGENT'], $matches)) {
+        if (!drupal_valid_test_ua($_SERVER['HTTP_USER_AGENT'])) {
+          header($_SERVER['SERVER_PROTOCOL'] . ' 403 Forbidden');
+          exit;
+        }
         $db_prefix .= $matches[1];
       }
 
@@ -1418,6 +1470,10 @@ function _drupal_bootstrap($phase) {
       // those using APC or memcached.
       require_once variable_get('lock_inc', './includes/lock.inc');
       lock_init();
+      
+      // Detect if an installation is present.
+      detect_installation_or_run_installer();
+
       break;
 
     case DRUPAL_BOOTSTRAP_ACCESS:
@@ -1693,7 +1749,7 @@ function drupal_session_commit() {
   if (empty($user->uid) && empty($_SESSION)) {
     if (drupal_session_started() && drupal_save_session()) {
       // Destroy empty anonymous sessions.
-      session_destroy();
+      drupal_session_destroy();
     }
   }
   else if (drupal_save_session()) {
@@ -1772,11 +1828,23 @@ function drupal_save_session($status = NULL) {
   }
   return $save_session;
 }
+	
+/**
+ * Returns the current bootstrap phase for this Drupal process.
+ *
+ * The current phase is the one most recently completed by drupal_bootstrap().
+ *
+ * @see drupal_bootstrap()
+ */
+function drupal_get_bootstrap_phase() {
+  return drupal_bootstrap();
+}
 
 /**
  * Validate the HMAC and timestamp of a user agent header from simpletest.
  */
 function drupal_valid_test_ua($user_agent) {
+//  global $dbatabases;
   global $db_url;
 
   list($prefix, $time, $salt, $hmac) = explode(';', $user_agent);
@@ -1784,7 +1852,9 @@ function drupal_valid_test_ua($user_agent) {
   // We use the database credentials from settings.php to make the HMAC key, since
   // the database is not yet initialized and we can't access any Drupal variables.
   // The file properties add more entropy not easily accessible to others.
+//  $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
   $filepath = './includes/bootstrap.inc';
+//  $key = sha1(serialize($databases) . filectime($filepath) . fileinode($filepath), TRUE);
   $key = sha1(serialize($db_url) . filectime($filepath) . fileinode($filepath), TRUE);
   // The HMAC must match.
   return $hmac == base64_encode(hash_hmac('sha1', $check_string, $key, TRUE));
@@ -1802,7 +1872,9 @@ function drupal_generate_test_ua($prefix) {
     // We use the database credentials to make the HMAC key, since we
     // check the HMAC before the database is initialized. filectime()
     // and fileinode() are not easily determined from remote.
-    $filepath = './includes/bootstrap.inc';
+//    $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
+    $filepath = './includes/bootstrap.inc';                
+//    $key = sha1(serialize($databases) . filectime($filepath) . fileinode($filepath), TRUE);
     $key = sha1(serialize($db_url) . filectime($filepath) . fileinode($filepath), TRUE);
   }
    // Generate a moderately secure HMAC based on the database credentials.
@@ -1817,4 +1889,20 @@ function drupal_generate_test_ua($prefix) {
 function drupal_is_cli() {
   return ((!isset($_SERVER['SERVER_SOFTWARE']) || $_SERVER['SERVER_SOFTWARE'] == 'PHP CLI')
     && (php_sapi_name() == 'cli' || (is_numeric($_SERVER['argc']) && $_SERVER['argc'] > 0)));
+}
+
+/**
+ * Destroys all data registered to a session.
+ *
+ * Placed in bootstrap.inc instead of session.inc as session.inc may be
+ * overridden by other session persistance layers (eg., memcache).
+ *
+ * @ingroup php_wrappers
+ */
+function drupal_session_destroy() {
+  session_destroy();
+  
+  // Workaround PHP 5.2 fatal error "Failed to initialize storage module".
+  // @see http://bugs.php.net/bug.php?id=32330
+  session_set_save_handler('sess_open', 'sess_close', 'sess_read', 'sess_write', 'sess_destroy_sid', 'sess_gc');
 }

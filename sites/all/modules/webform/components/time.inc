@@ -1,5 +1,5 @@
 <?php
-// $Id: time.inc,v 1.24.2.8 2010/03/26 00:09:10 quicksketch Exp $
+// $Id: time.inc,v 1.24.2.10 2010/08/19 03:00:45 quicksketch Exp $
 
 /**
  * @file
@@ -184,7 +184,7 @@ function theme_webform_time($element) {
     $element['minute']['#attributes']['class'] = 'error';
   }
 
-  $output = '<div class="container-inline">' . drupal_render($element['hour']) . drupal_render($element['minute']) . drupal_render($element['ampm']) . '</div>';
+  $output = '<div class="webform-container-inline">' . drupal_render($element['hour']) . drupal_render($element['minute']) . drupal_render($element['ampm']) . '</div>';
 
   $element['#type'] = 'element';
   return theme('form_element', $element, $output);
@@ -251,7 +251,7 @@ function _webform_display_time($component, $value, $format = 'html') {
  */
 function theme_webform_display_time($element) {
   $output = ' ';
-  if ($element['#value']['hour'] && $element['#value']['minute']) {
+  if (isset($element['#value']['hour']) && isset($element['#value']['minute'])) {
     if ($element['#hourformat'] == '24-hour') {
       $output = sprintf('%02d', $element['#value']['hour']) . ':' . sprintf('%02d', $element['#value']['minute']);
     }

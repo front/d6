@@ -1,5 +1,5 @@
 <?php
-// $Id: date.inc,v 1.29.2.9 2010/04/13 21:38:28 quicksketch Exp $
+// $Id: date.inc,v 1.29.2.12 2010/08/19 03:00:45 quicksketch Exp $
 
 /**
  * @file
@@ -232,11 +232,12 @@ function theme_webform_date($element) {
     $element['day']['#attributes']['class'] .= ' error';
   }
 
-  $class = array('container-inline');
+  $class = array('webform-container-inline');
 
   // Add the JavaScript calendar if available (provided by Date module package).
   if (!empty($element['#datepicker']) && function_exists('date_popup_load')) {
     date_popup_load();
+
     $class[] = 'webform-datepicker';
     $calendar_class = array('webform-calendar');
     if ($element['#year_start'] && is_numeric($element['#year_start'])) {
@@ -245,6 +246,8 @@ function theme_webform_date($element) {
     if ($element['#year_start'] && is_numeric($element['#year_end'])) {
       $calendar_class[] = 'webform-calendar-end-' . $element['#year_end'];
     }
+    $calendar_class[] ='webform-calendar-day-' . variable_get('date_first_day', 0);
+
     $calendar = theme('webform_calendar', $element['#webform_component'], $calendar_class);
   }
 
@@ -518,9 +521,8 @@ function webform_strtodate($format, $string, $timezone_name = NULL) {
   if (variable_get('configurable_timezones', 1) && $timezone_name == 'user') {
     $timezone_name = isset($GLOBALS['user']->timezone_name) ? $GLOBALS['user']->timezone_name : NULL;
   }
-  if (empty($timezone_name)) {
+  elseif (empty($timezone_name) || $timezone_name == 'user') {
     $timezone_name = variable_get('date_default_timezone_name', NULL);
-    $timezone_name = NULL;
   }
 
   if (!empty($timezone_name) && class_exists('DateTimeZone')) {
